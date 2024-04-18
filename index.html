@@ -60,22 +60,42 @@
     // Step counting
     let stepCount = 0;
     const stepCountDisplay = document.getElementById('step-count');
-    let lastAcceleration = { x: 0, y: 0, z: 0 };
+    let accelerationBuffer = [];
+    let lastStepTime = 0;
+    const stepThreshold = 0.5; // Adjust this value for better step detection
+    const stepInterval = 500; // Minimum time between steps in milliseconds
 
     window.addEventListener('devicemotion', handleMotion);
 
     function handleMotion(event) {
       const acceleration = event.accelerationIncludingGravity;
-      const deltaX = Math.abs(acceleration.x - lastAcceleration.x);
-      const deltaY = Math.abs(acceleration.y - lastAcceleration.y);
-      const deltaZ = Math.abs(acceleration.z - lastAcceleration.z);
+      const accelerationMagnitude = Math.sqrt(acceleration.x ** 2 + acceleration.y ** 2 + acceleration.z ** 2);
 
-      if (deltaX > 0.5 || deltaY > 0.5 || deltaZ > 0.5) {
+      accelerationBuffer.push(accelerationMagnitude);
+
+      // Apply low-pass filter to smooth the signal
+      const filteredAcceleration = lowPassFilter(accelerationBuffer, 0.1);
+
+      // Check for step pattern and adaptive threshold
+      const currentTime = new Date().getTime();
+      if (filteredAcceleration > stepThreshold && currentTime - lastStepTime > stepInterval) {
         stepCount++;
         stepCountDisplay.textContent = stepCount;
+        lastStepTime = currentTime;
       }
 
-      lastAcceleration = acceleration;
+      // Remove older acceleration values from the buffer
+      accelerationBuffer = accelerationBuffer.slice(-20);
+    }
+
+    function lowPassFilter(data, alpha) {
+      let lastValue = data[0];
+      const filteredData = data.map(value => {
+        const filteredValue = alpha * value + (1 - alpha) * lastValue;
+        lastValue = filteredValue;
+        return filteredValue;
+      });
+      return filteredData[filteredData.length - 1];
     }
 
     // Data storage
