@@ -61,18 +61,25 @@
     let stepCount = 0;
     const stepCountDisplay = document.getElementById('step-count');
     let lastAcceleration = { x: 0, y: 0, z: 0 };
+    let lastStepTime = Date.now();
 
     window.addEventListener('devicemotion', handleMotion);
 
     function handleMotion(event) {
       const acceleration = event.accelerationIncludingGravity;
-      const deltaX = Math.abs(acceleration.x - lastAcceleration.x);
-      const deltaY = Math.abs(acceleration.y - lastAcceleration.y);
-      const deltaZ = Math.abs(acceleration.z - lastAcceleration.z);
+      const now = Date.now();
 
-      if (deltaX > 0.5 || deltaY > 0.5 || deltaZ > 0.5) {
+      // Calculate the magnitude of acceleration
+      const magnitude = Math.sqrt(acceleration.x**2 + acceleration.y**2 + acceleration.z**2);
+
+      // Threshold to consider as a step and minimum time between steps (e.g., 500 ms)
+      const stepThreshold = 10.5; // Calibrate this threshold based on device testing
+      const stepTimeThreshold = 500;
+
+      if (magnitude > stepThreshold && (now - lastStepTime) > stepTimeThreshold) {
         stepCount++;
         stepCountDisplay.textContent = stepCount;
+        lastStepTime = now;
       }
 
       lastAcceleration = acceleration;
