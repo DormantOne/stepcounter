@@ -62,9 +62,9 @@
     const stepCountDisplay = document.getElementById('step-count');
     let accelerationBuffer = [];
     let lastStepTime = 0;
-    const stepThreshold = 1.5; // Adjust this value for better step detection
-    const stepInterval = 500; // Minimum time between steps in milliseconds
-    const stepPeakDuration = 200; // Maximum duration of a step peak in milliseconds
+    const stepThreshold = 1.2; // Adjust this value for better step detection
+    const stepInterval = 300; // Minimum time between steps in milliseconds
+    const stepPeakDuration = 150; // Maximum duration of a step peak in milliseconds
 
     window.addEventListener('devicemotion', handleMotion);
 
@@ -75,7 +75,7 @@
       accelerationBuffer.push({ value: accelerationMagnitude, timestamp: event.timeStamp });
 
       // Apply low-pass filter to smooth the signal
-      const filteredAcceleration = lowPassFilter(accelerationBuffer, 0.1);
+      const filteredAcceleration = lowPassFilter(accelerationBuffer, 0.2);
 
       // Check for step pattern and adaptive threshold
       const currentTime = new Date().getTime();
@@ -87,7 +87,7 @@
           (a) => a.value < stepThreshold && a.timestamp > event.timeStamp
         );
 
-        if (stepEnd - stepStart > 2) {
+        if (stepEnd - stepStart > 1) {
           stepCount++;
           stepCountDisplay.textContent = stepCount;
           lastStepTime = currentTime;
@@ -95,7 +95,7 @@
       }
 
       // Remove older acceleration values from the buffer
-      accelerationBuffer = accelerationBuffer.slice(-50);
+      accelerationBuffer = accelerationBuffer.slice(-30);
     }
 
     function lowPassFilter(data, alpha) {
