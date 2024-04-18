@@ -60,52 +60,22 @@
     // Step counting
     let stepCount = 0;
     const stepCountDisplay = document.getElementById('step-count');
-    let accelerationBuffer = [];
-    let lastStepTime = 0;
-    const stepThreshold = 1.2; // Adjust this value for better step detection
-    const stepInterval = 300; // Minimum time between steps in milliseconds
-    const stepPeakDuration = 150; // Maximum duration of a step peak in milliseconds
+    let lastAcceleration = { x: 0, y: 0, z: 0 };
 
     window.addEventListener('devicemotion', handleMotion);
 
     function handleMotion(event) {
       const acceleration = event.accelerationIncludingGravity;
-      const accelerationMagnitude = Math.sqrt(acceleration.x ** 2 + acceleration.y ** 2 + acceleration.z ** 2);
+      const deltaX = Math.abs(acceleration.x - lastAcceleration.x);
+      const deltaY = Math.abs(acceleration.y - lastAcceleration.y);
+      const deltaZ = Math.abs(acceleration.z - lastAcceleration.z);
 
-      accelerationBuffer.push({ value: accelerationMagnitude, timestamp: event.timeStamp });
-
-      // Apply low-pass filter to smooth the signal
-      const filteredAcceleration = lowPassFilter(accelerationBuffer, 0.2);
-
-      // Check for step pattern and adaptive threshold
-      const currentTime = new Date().getTime();
-      if (filteredAcceleration > stepThreshold && currentTime - lastStepTime > stepInterval) {
-        const stepStart = accelerationBuffer.findLastIndex(
-          (a) => a.value < stepThreshold && a.timestamp < event.timeStamp - stepPeakDuration
-        );
-        const stepEnd = accelerationBuffer.findIndex(
-          (a) => a.value < stepThreshold && a.timestamp > event.timeStamp
-        );
-
-        if (stepEnd - stepStart > 1) {
-          stepCount++;
-          stepCountDisplay.textContent = stepCount;
-          lastStepTime = currentTime;
-        }
+      if (deltaX > 0.5 || deltaY > 0.5 || deltaZ > 0.5) {
+        stepCount++;
+        stepCountDisplay.textContent = stepCount;
       }
 
-      // Remove older acceleration values from the buffer
-      accelerationBuffer = accelerationBuffer.slice(-30);
-    }
-
-    function lowPassFilter(data, alpha) {
-      let lastValue = data[0].value;
-      const filteredData = data.map(({ value, timestamp }) => {
-        const filteredValue = alpha * value + (1 - alpha) * lastValue;
-        lastValue = filteredValue;
-        return { value: filteredValue, timestamp };
-      });
-      return filteredData[filteredData.length - 1].value;
+      lastAcceleration = acceleration;
     }
 
     // Data storage
