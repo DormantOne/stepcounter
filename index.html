@@ -1,64 +1,4 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Rehab Progress</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      text-align: center;
-      margin: 20px;
-    }
-
-    input, button, select {
-      margin: 10px;
-    }
-
-    #step-count {
-      font-weight: bold;
-    }
-  </style>
-</head>
-<body>
-  <main>
-    <h1>Rehab Progress</h1>
-    <label for="start-date">Start Date:</label>
-    <input type="date" id="start-date" required>
-
-    <p>Current Step Count: <span id="step-count">0</span></p>
-
-    <label for="mood">Mood:</label>
-    <select id="mood" required>
-      <option value="">Select mood</option>
-      <option value="good">Good</option>
-      <option value="average">Average</option>
-      <option value="bad">Bad</option>
-    </select>
-
-    <label for="fatigue">Fatigue:</label>
-    <select id="fatigue" required>
-      <option value="">Select fatigue level</option>
-      <option value="low">Low</option>
-      <option value="medium">Medium</option>
-      <option value="high">High</option>
-    </select>
-
-    <label for="pain">Pain:</label>
-    <select id="pain" required>
-      <option value="">Select pain level</option>
-      <option value="low">Low</option>
-      <option value="medium">Medium</option>
-      <option value="high">High</option>
-    </select>
-
-    <button id="reminder-btn">Bed Exercise Reminder</button>
-    <button id="email-btn">Email Data</button>
-  </main>
-
-  <script>
-     
-  // Step counting with refined jerk sensitivity
+ // Step counting with ultra-sensitive detection
   let stepCount = 0;
   const stepCountDisplay = document.getElementById('step-count');
   let lastAcceleration = { x: 0, y: 0, z: 0 };
@@ -71,73 +11,24 @@
     const now = Date.now();
     const timeElapsed = now - lastTime;
 
-    // Smoothed acceleration
-    const smoothingFactor = 0.8;
-    const smoothedAcceleration = {
-      x: smoothingFactor * lastAcceleration.x + (1 - smoothingFactor) * currentAcceleration.x,
-      y: smoothingFactor * lastAcceleration.y + (1 - smoothingFactor) * currentAcceleration.y,
-      z: smoothingFactor * lastAcceleration.z + (1 - smoothingFactor) * currentAcceleration.z
+    // Calculate the magnitude of acceleration change
+    const accelerationChange = {
+      x: currentAcceleration.x - lastAcceleration.x,
+      y: currentAcceleration.y - lastAcceleration.y,
+      z: currentAcceleration.z - lastAcceleration.z
     };
+    const changeMagnitude = Math.sqrt(accelerationChange.x**2 + accelerationChange.y**2 + accelerationChange.z**2);
 
-    // Calculate jerk from smoothed acceleration
-    const jerk = {
-      x: (smoothedAcceleration.x - lastAcceleration.x) / timeElapsed,
-      y: (smoothedAcceleration.y - lastAcceleration.y) / timeElapsed,
-      z: (smoothedAcceleration.z - lastAcceleration.z) / timeElapsed
-    };
+    console.log('Change Magnitude:', changeMagnitude); // Log for debugging
 
-    // Calculate the magnitude of jerk
-    const jerkMagnitude = Math.sqrt(jerk.x**2 + jerk.y**2 + jerk.z**2);
-    console.log('Jerk Magnitude:', jerkMagnitude); // Log for debugging
+    const changeThreshold = 0.1; // Extremely sensitive threshold
+    const minTimeBetweenSteps = 100; // Very short time to detect rapid steps
 
-    const jerkThreshold = 0.2; // Very sensitive threshold
-    const minTimeBetweenSteps = 150; // Allows for faster walking
-
-    if (jerkMagnitude > jerkThreshold && timeElapsed > minTimeBetweenSteps) {
+    if (changeMagnitude > changeThreshold && timeElapsed > minTimeBetweenSteps) {
       stepCount++;
       stepCountDisplay.textContent = stepCount;
       lastTime = now;
     }
 
-    lastAcceleration = smoothedAcceleration; // Update lastAcceleration to the smoothed values
+    lastAcceleration = currentAcceleration; // Update lastAcceleration to current values
   }
-
-    // Data storage and other functionalities
-    const startDateInput = document.getElementById('start-date');
-    const moodSelect = document.getElementById('mood');
-    const fatigueSelect = document.getElementById('fatigue');
-    const painSelect = document.getElementById('pain');
-
-    function saveData() {
-      const data = {
-        startDate: startDateInput.value,
-        stepCount: stepCount,
-        mood: moodSelect.value,
-        fatigue: fatigueSelect.value,
-        pain: painSelect.value
-      };
-      localStorage.setItem('rehabData', JSON.stringify(data));
-    }
-
-    const reminderBtn = document.getElementById('reminder-btn');
-    reminderBtn.addEventListener('click', () => window.navigator.vibrate(200));
-
-    const emailBtn = document.getElementById('email-btn');
-    emailBtn.addEventListener('click', sendEmail);
-
-    function sendEmail() {
-      const data = JSON.parse(localStorage.getItem('rehabData'));
-      const emailBody = `
-        Start Date: ${data.startDate}
-        Step Count: ${data.stepCount}
-        Mood: ${data.mood}
-        Fatigue: ${data.fatigue}
-        Pain: ${data.pain}
-      `;
-      window.location.href = `mailto:?subject=Rehab Progress Data&body=${encodeURIComponent(emailBody)}`;
-    }
-
-    window.addEventListener('beforeunload', saveData);
-  </script>
-</body>
-</html>
