@@ -1,3 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Rehab Progress</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      margin: 20px;
+    }
+
+    input, button, select {
+      margin: 10px;
+    }
+
+    #step-count {
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Rehab Progress</h1>
+    <label for="start-date">Start Date:</label>
+    <input type="date" id="start-date" required>
+
+    <p>Current Step Count: <span id="step-count">0</span></p>
+
+    <label for="mood">Mood:</label>
+    <select id="mood" required>
+      <option value="">Select mood</option>
+      <option value="good">Good</option>
+      <option value="average">Average</option>
+      <option value="bad">Bad</option>
+    </select>
+
+    <label for="fatigue">Fatigue:</label>
+    <select id="fatigue" required>
+      <option value="">Select fatigue level</option>
+      <option value="low">Low</option>
+      <option value="medium">Medium</option>
+      <option value="high">High</option>
+    </select>
+
+    <label for="pain">Pain:</label>
+    <select id="pain" required>
+      <option value="">Select pain level</option>
+      <option value="low">Low</option>
+      <option value="medium">Medium</option>
+      <option value="high">High</option>
+    </select>
+
+    <button id="reminder-btn">Bed Exercise Reminder</button>
+    <button id="email-btn">Email Data</button>
+  </main>
+
+  <script>
+     
  // Step counting with ultra-sensitive detection
   let stepCount = 0;
   const stepCountDisplay = document.getElementById('step-count');
@@ -32,3 +92,42 @@
 
     lastAcceleration = currentAcceleration; // Update lastAcceleration to current values
   }
+    // Data storage and other functionalities
+    const startDateInput = document.getElementById('start-date');
+    const moodSelect = document.getElementById('mood');
+    const fatigueSelect = document.getElementById('fatigue');
+    const painSelect = document.getElementById('pain');
+
+    function saveData() {
+      const data = {
+        startDate: startDateInput.value,
+        stepCount: stepCount,
+        mood: moodSelect.value,
+        fatigue: fatigueSelect.value,
+        pain: painSelect.value
+      };
+      localStorage.setItem('rehabData', JSON.stringify(data));
+    }
+
+    const reminderBtn = document.getElementById('reminder-btn');
+    reminderBtn.addEventListener('click', () => window.navigator.vibrate(200));
+
+    const emailBtn = document.getElementById('email-btn');
+    emailBtn.addEventListener('click', sendEmail);
+
+    function sendEmail() {
+      const data = JSON.parse(localStorage.getItem('rehabData'));
+      const emailBody = `
+        Start Date: ${data.startDate}
+        Step Count: ${data.stepCount}
+        Mood: ${data.mood}
+        Fatigue: ${data.fatigue}
+        Pain: ${data.pain}
+      `;
+      window.location.href = `mailto:?subject=Rehab Progress Data&body=${encodeURIComponent(emailBody)}`;
+    }
+
+    window.addEventListener('beforeunload', saveData);
+  </script>
+</body>
+</html>
