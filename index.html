@@ -57,35 +57,40 @@
   </main>
 
   <script>
-    // Step counting
+    // Step counting with jerk calculation
     let stepCount = 0;
     const stepCountDisplay = document.getElementById('step-count');
     let lastAcceleration = { x: 0, y: 0, z: 0 };
-    let lastStepTime = Date.now();
+    let lastTime = Date.now();
 
     window.addEventListener('devicemotion', handleMotion);
 
     function handleMotion(event) {
-      const acceleration = event.accelerationIncludingGravity;
+      const currentAcceleration = event.accelerationIncludingGravity;
       const now = Date.now();
 
-      // Calculate the magnitude of acceleration
-      const magnitude = Math.sqrt(acceleration.x**2 + acceleration.y**2 + acceleration.z**2);
+      // Calculate jerk
+      const jerk = {
+        x: (currentAcceleration.x - lastAcceleration.x) / (now - lastTime),
+        y: (currentAcceleration.y - lastAcceleration.y) / (now - lastTime),
+        z: (currentAcceleration.z - lastAcceleration.z) / (now - lastTime)
+      };
 
-      // Threshold to consider as a step and minimum time between steps (e.g., 500 ms)
-      const stepThreshold = 10.5; // Calibrate this threshold based on device testing
-      const stepTimeThreshold = 500;
+      // Calculate the magnitude of jerk
+      const jerkMagnitude = Math.sqrt(jerk.x**2 + jerk.y**2 + jerk.z**2);
+      const jerkThreshold = 1.5; // Threshold to distinguish steps; tune as needed
+      const minTimeBetweenSteps = 300; // Min time between steps in ms
 
-      if (magnitude > stepThreshold && (now - lastStepTime) > stepTimeThreshold) {
+      if (jerkMagnitude > jerkThreshold && (now - lastTime) > minTimeBetweenSteps) {
         stepCount++;
         stepCountDisplay.textContent = stepCount;
-        lastStepTime = now;
+        lastTime = now;
       }
 
-      lastAcceleration = acceleration;
+      lastAcceleration = currentAcceleration;
     }
 
-    // Data storage
+    // Data storage and other functionalities
     const startDateInput = document.getElementById('start-date');
     const moodSelect = document.getElementById('mood');
     const fatigueSelect = document.getElementById('fatigue');
@@ -102,13 +107,9 @@
       localStorage.setItem('rehabData', JSON.stringify(data));
     }
 
-    // Haptic reminder
     const reminderBtn = document.getElementById('reminder-btn');
-    reminderBtn.addEventListener('click', () => {
-      window.navigator.vibrate(200); // Vibrate for 200ms
-    });
+    reminderBtn.addEventListener('click', () => window.navigator.vibrate(200));
 
-    // Email functionality
     const emailBtn = document.getElementById('email-btn');
     emailBtn.addEventListener('click', sendEmail);
 
@@ -121,13 +122,9 @@
         Fatigue: ${data.fatigue}
         Pain: ${data.pain}
       `;
-
-      // Use a third-party email API or backend service to send the email
-      // Example using the mailto: protocol (this will open the user's default email client)
       window.location.href = `mailto:?subject=Rehab Progress Data&body=${encodeURIComponent(emailBody)}`;
     }
 
-    // Save data on page unload
     window.addEventListener('beforeunload', saveData);
   </script>
 </body>
