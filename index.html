@@ -11,7 +11,7 @@
       margin: 20px;
     }
 
-    input, button, select {
+    input, button, select, .slider {
       margin: 10px;
     }
 
@@ -27,6 +27,14 @@
     <input type="date" id="start-date" required>
 
     <p>Current Step Count: <span id="step-count">0</span></p>
+
+    <label for="change-threshold">Change Threshold:</label>
+    <input type="range" id="change-threshold" min="0.01" max="2" value="0.1" step="0.01" class="slider">
+    <span id="threshold-value">0.1</span>
+
+    <label for="time-threshold">Min Time Between Steps (ms):</label>
+    <input type="range" id="time-threshold" min="50" max="1000" value="100" step="50" class="slider">
+    <span id="time-value">100</span>
 
     <label for="mood">Mood:</label>
     <select id="mood" required>
@@ -57,77 +65,97 @@
   </main>
 
   <script>
-     
- // Step counting with ultra-sensitive detection
-  let stepCount = 0;
-  const stepCountDisplay = document.getElementById('step-count');
-  let lastAcceleration = { x: 0, y: 0, z: 0 };
-  let lastTime = Date.now();
+    let stepCount = 0;
+    const stepCountDisplay = document.getElementById('step-count');
+    let lastAcceleration = { x: 0, y: 0, z: 0 };
+    let lastTime = Date.now();
 
-  window.addEventListener('devicemotion', handleMotion);
+    const changeThresholdSlider = document.getElementById('change-threshold');
+    const timeThresholdSlider = document.getElementById('time-threshold');
+    const thresholdDisplay = document.getElementById('threshold-value');
+    const timeDisplay = document.getElementById('time-value');
 
-  function handleMotion(event) {
-    const currentAcceleration = event.accelerationIncludingGravity;
-    const now = Date.now();
-    const timeElapsed = now - lastTime;
-
-    // Calculate the magnitude of acceleration change
-    const accelerationChange = {
-      x: currentAcceleration.x - lastAcceleration.x,
-      y: currentAcceleration.y - lastAcceleration.y,
-      z: currentAcceleration.z - lastAcceleration.z
-    };
-    const changeMagnitude = Math.sqrt(accelerationChange.x**2 + accelerationChange.y**2 + accelerationChange.z**2);
-
-    console.log('Change Magnitude:', changeMagnitude); // Log for debugging
-
-    const changeThreshold = 0.1; // Extremely sensitive threshold
-    const minTimeBetweenSteps = 100; // Very short time to detect rapid steps
-
-    if (changeMagnitude > changeThreshold && timeElapsed > minTimeBetweenSteps) {
-      stepCount++;
-      stepCountDisplay.textContent = stepCount;
-      lastTime = now;
+    // Update display values when sliders are moved
+    changeThresholdSlider.oninput = function() {
+      thresholdDisplay.textContent = this.value;
+    }
+    timeThresholdSlider.oninput = function() {
+      timeDisplay.textContent = this.value;
     }
 
-    lastAcceleration = currentAcceleration; // Update lastAcceleration to current values
-  }
-    // Data storage and other functionalities
-    const startDateInput = document.getElementById('start-date');
-    const moodSelect = document.getElementById('mood');
-    const fatigueSelect = document.getElementById('fatigue');
-    const painSelect = document.getElementById('pain');
+    window.addEventListener('devicemotion', handleMotion);
 
-    function saveData() {
-      const data = {
-        startDate: startDateInput.value,
-        stepCount: stepCount,
-        mood: moodSelect.value,
-        fatigue: fatigueSelect.value,
-        pain: painSelect.value
+    function handleMotion(event) {
+      const currentAcceleration = event.accelerationIncludingGravity;
+      const now = Date.now();
+      const timeElapsed = now - lastTime;
+
+      // Calculate the magnitude of acceleration change
+      const accelerationChange = {
+        x: currentAcceleration.x - lastAcceleration.x,
+        y: currentAcceleration.y - lastAcceleration.y,
+        z: currentAcceleration.z - lastAcceleration.z
       };
-      localStorage.setItem('rehabData', JSON.stringify(data));
+      const changeMagnitude = Math.sqrt(accelerationChange.x**2 + accelerationChange.y**2 + accelerationChange.z**2);
+
+      // Get dynamic threshold and time values from sliders
+      const changeThreshold = parseFloat(changeThresholdSlider.value);
+      const minTimeBetweenSteps = parseInt(timeThresholdSlider.value);
+
+      if (changeMagnitude > changeThreshold && timeElapsed > minTimeBetweenSteps) {
+        stepCount++;
+        stepCountDisplay.textContent = stepCount;
+        lastTime = now;
+      }
+
+      lastAcceleration = currentAcceleration; // Update lastAcceleration to current values
     }
 
-    const reminderBtn = document.getElementById('reminder-btn');
-    reminderBtn.addEventListener('click', () => window.navigator.vibrate(200));
+     // Data storage
+        const startDateInput = document.getElementById('start-date');
+        const moodSelect = document.getElementById('mood');
+        const fatigueSelect = document.getElementById('fatigue');
+        const painSelect = document.getElementById('pain');
 
-    const emailBtn = document.getElementById('email-btn');
-    emailBtn.addEventListener('click', sendEmail);
+        function saveData() {
+            const data = {
+                startDate: startDateInput.value,
+                stepCount: stepCount,
+                mood: moodSelect.value,
+                fatigue: fatigueSelect.value,
+                pain: painSelect.value
+            };
+            localStorage.setItem('rehabData', JSON.stringify(data));
+        }
 
-    function sendEmail() {
-      const data = JSON.parse(localStorage.getItem('rehabData'));
-      const emailBody = `
-        Start Date: ${data.startDate}
-        Step Count: ${data.stepCount}
-        Mood: ${data.mood}
-        Fatigue: ${data.fatigue}
-        Pain: ${data.pain}
-      `;
-      window.location.href = `mailto:?subject=Rehab Progress Data&body=${encodeURIComponent(emailBody)}`;
-    }
+        // Haptic reminder
+        const reminderBtn = document.getElementById('reminder-btn');
+        reminderBtn.addEventListener('click', () => {
+            window.navigator.vibrate(200); // Vibrate for 200ms
+        });
 
-    window.addEventListener('beforeunload', saveData);
+        // Email functionality
+        const emailBtn = document.getElementById('email-btn');
+        emailBtn.addEventListener('click', sendEmail);
+
+        function sendEmail() {
+            const data = JSON.parse(localStorage.getItem('rehabData'));
+            const emailBody = `
+            Start Date: ${data.startDate}
+            Step Count: ${data.stepCount}
+            Mood: ${data.mood}
+            Fatigue: ${data.fatigue}
+            Pain: ${data.pain}
+          `;
+
+            // Use a third-party email API or backend service to send the email
+            // Example using the mailto: protocol (this will open the user's default email client)
+            window.location.href = `mailto:?subject=Rehab Progress Data&body=${encodeURIComponent(emailBody)}`;
+        }
+
+        // Save data on page unload
+        window.addEventListener('beforeunload', saveData);
+
   </script>
 </body>
 </html>
