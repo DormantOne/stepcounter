@@ -57,7 +57,8 @@
   </main>
 
   <script>
-      // Step counting with improved jerk calculation
+     
+  // Step counting with refined jerk sensitivity
   let stepCount = 0;
   const stepCountDisplay = document.getElementById('step-count');
   let lastAcceleration = { x: 0, y: 0, z: 0 };
@@ -70,19 +71,27 @@
     const now = Date.now();
     const timeElapsed = now - lastTime;
 
-    // Calculate jerk
+    // Smoothed acceleration
+    const smoothingFactor = 0.8;
+    const smoothedAcceleration = {
+      x: smoothingFactor * lastAcceleration.x + (1 - smoothingFactor) * currentAcceleration.x,
+      y: smoothingFactor * lastAcceleration.y + (1 - smoothingFactor) * currentAcceleration.y,
+      z: smoothingFactor * lastAcceleration.z + (1 - smoothingFactor) * currentAcceleration.z
+    };
+
+    // Calculate jerk from smoothed acceleration
     const jerk = {
-      x: (currentAcceleration.x - lastAcceleration.x) / timeElapsed,
-      y: (currentAcceleration.y - lastAcceleration.y) / timeElapsed,
-      z: (currentAcceleration.z - lastAcceleration.z) / timeElapsed
+      x: (smoothedAcceleration.x - lastAcceleration.x) / timeElapsed,
+      y: (smoothedAcceleration.y - lastAcceleration.y) / timeElapsed,
+      z: (smoothedAcceleration.z - lastAcceleration.z) / timeElapsed
     };
 
     // Calculate the magnitude of jerk
     const jerkMagnitude = Math.sqrt(jerk.x**2 + jerk.y**2 + jerk.z**2);
     console.log('Jerk Magnitude:', jerkMagnitude); // Log for debugging
 
-    const jerkThreshold = 0.7; // Lowered threshold for testing
-    const minTimeBetweenSteps = 200; // Lowered time between steps
+    const jerkThreshold = 0.2; // Very sensitive threshold
+    const minTimeBetweenSteps = 150; // Allows for faster walking
 
     if (jerkMagnitude > jerkThreshold && timeElapsed > minTimeBetweenSteps) {
       stepCount++;
@@ -90,7 +99,7 @@
       lastTime = now;
     }
 
-    lastAcceleration = currentAcceleration;
+    lastAcceleration = smoothedAcceleration; // Update lastAcceleration to the smoothed values
   }
 
     // Data storage and other functionalities
