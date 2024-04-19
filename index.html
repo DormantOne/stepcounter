@@ -57,38 +57,41 @@
   </main>
 
   <script>
-    // Step counting with jerk calculation
-    let stepCount = 0;
-    const stepCountDisplay = document.getElementById('step-count');
-    let lastAcceleration = { x: 0, y: 0, z: 0 };
-    let lastTime = Date.now();
+      // Step counting with improved jerk calculation
+  let stepCount = 0;
+  const stepCountDisplay = document.getElementById('step-count');
+  let lastAcceleration = { x: 0, y: 0, z: 0 };
+  let lastTime = Date.now();
 
-    window.addEventListener('devicemotion', handleMotion);
+  window.addEventListener('devicemotion', handleMotion);
 
-    function handleMotion(event) {
-      const currentAcceleration = event.accelerationIncludingGravity;
-      const now = Date.now();
+  function handleMotion(event) {
+    const currentAcceleration = event.accelerationIncludingGravity;
+    const now = Date.now();
+    const timeElapsed = now - lastTime;
 
-      // Calculate jerk
-      const jerk = {
-        x: (currentAcceleration.x - lastAcceleration.x) / (now - lastTime),
-        y: (currentAcceleration.y - lastAcceleration.y) / (now - lastTime),
-        z: (currentAcceleration.z - lastAcceleration.z) / (now - lastTime)
-      };
+    // Calculate jerk
+    const jerk = {
+      x: (currentAcceleration.x - lastAcceleration.x) / timeElapsed,
+      y: (currentAcceleration.y - lastAcceleration.y) / timeElapsed,
+      z: (currentAcceleration.z - lastAcceleration.z) / timeElapsed
+    };
 
-      // Calculate the magnitude of jerk
-      const jerkMagnitude = Math.sqrt(jerk.x**2 + jerk.y**2 + jerk.z**2);
-      const jerkThreshold = 1.5; // Threshold to distinguish steps; tune as needed
-      const minTimeBetweenSteps = 300; // Min time between steps in ms
+    // Calculate the magnitude of jerk
+    const jerkMagnitude = Math.sqrt(jerk.x**2 + jerk.y**2 + jerk.z**2);
+    console.log('Jerk Magnitude:', jerkMagnitude); // Log for debugging
 
-      if (jerkMagnitude > jerkThreshold && (now - lastTime) > minTimeBetweenSteps) {
-        stepCount++;
-        stepCountDisplay.textContent = stepCount;
-        lastTime = now;
-      }
+    const jerkThreshold = 0.7; // Lowered threshold for testing
+    const minTimeBetweenSteps = 200; // Lowered time between steps
 
-      lastAcceleration = currentAcceleration;
+    if (jerkMagnitude > jerkThreshold && timeElapsed > minTimeBetweenSteps) {
+      stepCount++;
+      stepCountDisplay.textContent = stepCount;
+      lastTime = now;
     }
+
+    lastAcceleration = currentAcceleration;
+  }
 
     // Data storage and other functionalities
     const startDateInput = document.getElementById('start-date');
