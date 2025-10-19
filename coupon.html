@@ -1,241 +1,463 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="utf-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>Step → Coupon (Encrypted Pools)</title>
-<style>
-  :root{--bg:#0b0d10;--card:#12161b;--mut:#9aa4ae;--fg:#e8ecf1;--acc:#4caf50;--warn:#ff6b6b;}
-  *{box-sizing:border-box} body{margin:0;background:var(--bg);color:var(--fg);font-family:Inter,system-ui,Segoe UI,Roboto,Arial,sans-serif}
-  .wrap{max-width:980px;margin:24px auto;padding:16px}
-  .card{background:var(--card);border:1px solid #1f2a33;border-radius:14px;padding:16px}
-  h1{margin:0 0 8px;font-size:1.35rem} .mut{color:var(--mut);font-size:.92rem}
-  input,textarea,button{font:inherit}
-  input,textarea{width:100%;background:#0d1116;border:1px solid #1f2a33;color:var(--fg);border-radius:10px;padding:10px 12px}
-  textarea{min-height:120px;resize:vertical;font-family:ui-monospace,Menlo,Consolas,monospace}
-  .row{display:grid;gap:12px} @media(min-width:860px){.row.two{grid-template-columns:1fr 1fr}}
-  .btn{border:0;border-radius:10px;padding:10px 12px;font-weight:700;cursor:pointer;background:#2d3742;color:#fff}
-  .btn.acc{background:var(--acc)} .btn.warn{background:#b23b3b}
-  .meter{height:10px;background:#1b232b;border-radius:999px;overflow:hidden;margin-top:6px}
-  .meter>span{display:block;height:100%;background:var(--acc);width:0%}
-  .ok{color:var(--acc)} .bad{color:var(--warn)}
-</style>
-<!-- CryptoJS (AES-ECB / PKCS7) -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
-</head>
-<body>
-<div class="wrap">
-  <div class="card">
-    <h1>Step → Coupon</h1>
-    <div class="mut">Enter key → Decrypt pools → Walk (or click) to 10 steps → Reveal coupon. Numbers come from encrypted arrays; UI doesn’t expose why they were chosen.</div>
-  </div>
+import React, { useState, useEffect, useRef } from 'react';
+import { Award, Mail, Shield, CheckCircle, XCircle, Lock } from 'lucide-react';
 
-  <div class="card">
-    <h3 style="margin:0 0 8px;">Owner Key & Pool Loader</h3>
-    <div class="row two">
-      <div>
-        <label>Key</label>
-        <input id="key" value="COUPONMAGIC2025!COUPONMAGIC2025!"/>
-        <div class="mut" id="keyBits"></div>
-      </div>
-      <div>
-        <div class="mut">Click to decrypt four embedded arrays.</div>
-        <button class="btn acc" id="load">Load / Decrypt Pools</button>
-        <div id="loadStatus" class="mut" style="margin-top:8px"></div>
-      </div>
-    </div>
-  </div>
+const CryptoStepCoupon = () => {
+  const [stepCount, setStepCount] = useState(0);
+  const [coupon, setCoupon] = useState(null);
+  const [changeThreshold, setChangeThreshold] = useState(0.5);
+  const [timeThreshold, setTimeThreshold] = useState(300);
+  const [mode, setMode] = useState('generate'); // 'generate' or 'verify'
+  const [verifyInput, setVerifyInput] = useState('');
+  const [verifyResult, setVerifyResult] = useState(null);
+  const [startTime] = useState(Date.now());
+  
+  const lastAcceleration = useRef({ x: 0, y: 0, z: 0 });
+  const lastTime = useRef(Date.now());
 
-  <div class="card">
-    <div class="row two">
-      <div>
-        <div><b>Today:</b> <span id="today"></span></div>
-        <div style="margin-top:6px"><b>Steps:</b> <span id="steps">0</span></div>
-        <div class="meter" title="progress to reveal"><span id="progress"></span></div>
-        <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
-          <button class="btn" id="inc">+1 Step</button>
-          <button class="btn warn" id="reset">Reset</button>
-        </div>
-        <div id="status" class="mut" style="margin-top:8px">Load pools to begin.</div>
-      </div>
-      <div>
-        <label>Token (≥5 steps)</label>
-        <textarea id="token" readonly></textarea>
-        <div style="margin-top:12px">
-          <label>Coupon (≥10 steps)</label>
-          <textarea id="coupon" readonly></textarea>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
+  // Obfuscated rules (base64 encoded JSON split across variables)
+  const p1 = 'eyJydWxlcyI6W3siZGl2IjpbN10sIm1vZCI6W3siZCI6MTMsInIiOjV9XSwicmFuZ2UiOls';
+  const p2 = 'xMDAwLDk5OTldfSx7ImRpdiI6WzExXSwibW9kIjpbeyJkIjoxNywiciI6OH1dLCJyYW5nZSI6';
+  const p3 = 'WzEwMDAsOTk5OV19LHsiZGl2IjpbMTNdLCJtb2QiOlt7ImQiOjE5LCJyIjozfV0sInJhbmdlIj';
+  const p4 = 'pbDEwMDAsOTk5OV19LHsiZGl2IjpbMTddLCJtb2QiOlt7ImQiOjIzLCJyIjoxNH1dLCJyYW5n';
+  const p5 = 'ZSI6WzEwMDAsOTk5OV19LHsiZGl2IjpbMTldLCJtb2QiOlt7ImQiOjI5LCJyIjo3fV0sInJhbm';
+  const p6 = 'dlIjpbMTAwMCw5OTk5XX1dLCJ2YWxpZGF0aW9uQ29kZSI6IkFMUEhBMjAyNSJ9';
 
-<script>
-// ---------- Guard ----------
-if (typeof CryptoJS === 'undefined') {
-  alert('CryptoJS failed to load. If offline, save the library locally or serve this over a local server.');
-}
-
-// ---------- Embedded encrypted arrays (base64, AES-ECB-PKCS7 of JSON array text) ----------
-const ARR1_CIPH = "dVxzwWtJKPiTMXNV8WDi99GDwT4R4FAcZ0ottVvO84I=";
-const ARR2_CIPH = "4kL68Svx3UuYYOO7C1JpzG3q4wnS76upgogR0LpI0fA=";
-const ARR3_CIPH = "E3xqk81R3p6N0SZlIzhomzH4XN1J195QCA7JgWsIKYQ=";
-const ARR4_CIPH = "Q9gKq41AngnCfRIRqpROimlUIxpJdulssVeur6mcC1s=";
-
-// ---------- DOM ----------
-const elKey = document.getElementById('key');
-const elKeyBits = document.getElementById('keyBits');
-const elLoad = document.getElementById('load');
-const elLoadStatus = document.getElementById('loadStatus');
-
-const elToday = document.getElementById('today');
-const elSteps = document.getElementById('steps');
-const elProgress = document.getElementById('progress');
-const elStatus = document.getElementById('status');
-const elToken = document.getElementById('token');
-const elCoupon = document.getElementById('coupon');
-
-const btnInc = document.getElementById('inc');
-const btnReset = document.getElementById('reset');
-
-// ---------- Key meter ----------
-function updateKeyBits(){
-  const bytes = new TextEncoder().encode(elKey.value).length;
-  const bits = bytes * 8;
-  const valid = (bytes===16||bytes===24||bytes===32);
-  elKeyBits.innerHTML = `Key length: <b>${bytes} bytes</b> (${bits} bits) — ` + (valid?'<span class="ok">valid</span>':'<span class="bad">need 16/24/32</span>');
-}
-elKey.addEventListener('input', updateKeyBits);
-
-// ---------- Decrypt helpers ----------
-function keyWA(k){ return CryptoJS.enc.Utf8.parse(k); }
-function decryptJSONArr(b64, key){
-  const dec = CryptoJS.AES.decrypt(b64, key, {mode: CryptoJS.mode.ECB, padding: CryptoJS.pad.Pkcs7});
-  const txt = dec.toString(CryptoJS.enc.Utf8);
-  if (!txt) throw new Error('Bad key or blob');
-  const obj = JSON.parse(txt);
-  if (!Array.isArray(obj)) throw new Error('Decrypted content is not an array');
-  // normalize to integers
-  return obj.map(x => parseInt(x,10)).filter(Number.isFinite);
-}
-function encNumberToB64(n, key){
-  const ct = CryptoJS.AES.encrypt(CryptoJS.enc.Utf8.parse(String(n)), key, {mode: CryptoJS.mode.ECB, padding: CryptoJS.pad.Pkcs7});
-  return ct.toString();
-}
-
-// ---------- State ----------
-const UNLOCK_STEPS = 5, REVEAL_STEPS = 10;
-let loaded = false;
-let pools = [[],[],[],[]];
-let steps = 0;
-let tokenMsg = '';
-let couponObj = null;
-
-// ---------- UI helpers ----------
-const todayISO = () => new Date().toISOString().slice(0,10);
-function setStatus(msg, ok=false){ elStatus.innerHTML = ok?`<span class="ok">✔ ${msg}</span>`:msg; }
-function pct(){ return Math.min(100, Math.floor(steps/REVEAL_STEPS*100)); }
-function rand(arr){ return arr[Math.floor(Math.random()*arr.length)]; }
-function shuffle(a){ const x=[...a]; for(let i=x.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [x[i],x[j]]=[x[j],x[i]]; } return x; }
-
-function refresh(){
-  elToday.textContent = todayISO();
-  elSteps.textContent = steps;
-  elProgress.style.width = pct() + '%';
-
-  if (!loaded){
-    setStatus('Load pools with the key first.');
-    elToken.value=''; elCoupon.value=''; return;
-  }
-  if (steps < UNLOCK_STEPS){
-    setStatus(`Need ${UNLOCK_STEPS-steps} more step(s) to unlock…`);
-    elToken.value=''; elCoupon.value=''; return;
-  }
-  tokenMsg = tokenMsg || 'TOKEN READY — keep stepping…';
-  elToken.value = tokenMsg;
-  if (steps < REVEAL_STEPS){
-    setStatus('Token unlocked. Reach 10 to reveal.', true);
-    elCoupon.value=''; return;
-  }
-  if (!couponObj) couponObj = buildCoupon();
-  setStatus('Coupon revealed.', true);
-  elCoupon.value = JSON.stringify(couponObj, null, 2);
-}
-
-// Hidden-ish trigger effects (subtle; not advertised)
-function runHiddenEffects(picks){
-  // Example: if any value ends with 123 → tag 'star', if digit sum % 9 == 0 → tag 'bonus'
-  const tags = [];
-  for (const p of picks){
-    const v = p.value;
-    if (String(v).endsWith('123')) tags.push({code:p.code, tag:'star'});
-    const sum = String(v).split('').reduce((a,b)=>a+(+b||0),0);
-    if (sum % 9 === 0) tags.push({code:p.code, tag:'bonus'});
-  }
-  return tags;
-}
-
-function buildCoupon(){
-  const key = keyWA(elKey.value);
-  const used = new Set();
-  function pickFrom(bucket){
-    const choices = bucket.filter(n=>!used.has(n));
-    if (!choices.length) throw new Error('Bucket exhausted; not enough unique values.');
-    const v = rand(choices); used.add(v); return v;
-  }
-  const pA = pickFrom(pools[0]);
-  const pB = pickFrom(pools[1]);
-  const pC = pickFrom(pools[2]);
-  const pD = pickFrom(pools[3]);
-
-  const labels = shuffle(['R7','X9','Q2','L1']);
-  const picks = [
-    { code: labels[0], value: pA, enc: encNumberToB64(pA, key) },
-    { code: labels[1], value: pB, enc: encNumberToB64(pB, key) },
-    { code: labels[2], value: pC, enc: encNumberToB64(pC, key) },
-    { code: labels[3], value: pD, enc: encNumberToB64(pD, key) },
-  ];
-  const effects = runHiddenEffects(picks);
-
-  return {
-    version: 1,
-    date: todayISO(),
-    steps,
-    picks,               // each: {code, value, enc}
-    effects              // hidden tags (owner can use or ignore)
+  const getRules = () => {
+    const encoded = p1 + p2 + p3 + p4 + p5 + p6;
+    const decoded = atob(encoded);
+    return JSON.parse(decoded);
   };
-}
 
-// ---------- Events ----------
-elLoad.onclick = ()=>{
-  elLoadStatus.textContent = 'Decrypting…';
-  try{
-    const key = keyWA(elKey.value);
-    const a1 = decryptJSONArr(ARR1_CIPH, key);
-    const a2 = decryptJSONArr(ARR2_CIPH, key);
-    const a3 = decryptJSONArr(ARR3_CIPH, key);
-    const a4 = decryptJSONArr(ARR4_CIPH, key);
-    pools = [a1,a2,a3,a4];
-    const total = a1.length + a2.length + a3.length + a4.length;
-    loaded = true; steps = 0; tokenMsg=''; couponObj=null;
-    elLoadStatus.innerHTML = `<span class="ok">Loaded ${total} numbers across 4 pools.</span>`;
-    refresh();
-  }catch(e){
-    console.error(e);
-    loaded = false;
-    elLoadStatus.innerHTML = `<span class="bad">Failed to decrypt pools. Check key.</span>`;
-    elToken.value=''; elCoupon.value='';
-  }
+  useEffect(() => {
+    const handleMotion = (event) => {
+      if (coupon) return;
+      
+      const current = event.accelerationIncludingGravity;
+      if (!current) return;
+
+      const now = Date.now();
+      const timeElapsed = now - lastTime.current;
+
+      const change = {
+        x: current.x - lastAcceleration.current.x,
+        y: current.y - lastAcceleration.current.y,
+        z: current.z - lastAcceleration.current.z
+      };
+      
+      const magnitude = Math.sqrt(change.x**2 + change.y**2 + change.z**2);
+
+      if (magnitude > changeThreshold && timeElapsed > timeThreshold) {
+        setStepCount(prev => prev + 1);
+        lastTime.current = now;
+      }
+
+      lastAcceleration.current = current;
+    };
+
+    window.addEventListener('devicemotion', handleMotion);
+    return () => window.removeEventListener('devicemotion', handleMotion);
+  }, [changeThreshold, timeThreshold, coupon]);
+
+  const gcd = (a, b) => b === 0 ? a : gcd(b, a % b);
+  const lcm = (a, b) => (a * b) / gcd(a, b);
+
+  const generateNumberForRule = (rule) => {
+    const { div, mod, range } = rule;
+    const baseLCM = div.reduce((acc, val) => lcm(acc, val), 1);
+    const maxAttempts = 10000;
+    
+    for (let i = 0; i < maxAttempts; i++) {
+      const multiplier = Math.floor(Math.random() * (range[1] / baseLCM)) + 1;
+      let candidate = baseLCM * multiplier;
+      
+      let valid = true;
+      for (const modRule of mod) {
+        const currentRemainder = candidate % modRule.d;
+        if (currentRemainder !== modRule.r) {
+          const adjustment = (modRule.r - currentRemainder + modRule.d) % modRule.d;
+          candidate += adjustment;
+          
+          if (candidate < range[0] || candidate > range[1]) {
+            valid = false;
+            break;
+          }
+          
+          for (const d of div) {
+            if (candidate % d !== 0) {
+              valid = false;
+              break;
+            }
+          }
+        }
+      }
+      
+      if (valid && candidate >= range[0] && candidate <= range[1]) {
+        const allDivisible = div.every(d => candidate % d === 0);
+        const allModulo = mod.every(m => candidate % m.d === m.r);
+        
+        if (allDivisible && allModulo) {
+          return candidate;
+        }
+      }
+    }
+    
+    throw new Error('Could not generate valid number');
+  };
+
+  const generateCoupon = () => {
+    try {
+      const rulesData = getRules();
+      const numbers = rulesData.rules.map(rule => generateNumberForRule(rule));
+      const endTime = Date.now();
+      const duration = Math.floor((endTime - startTime) / 1000);
+      
+      const couponData = {
+        numbers: numbers,
+        code: numbers.join('-'),
+        steps: stepCount,
+        timestamp: new Date().toISOString(),
+        duration: duration,
+        validationCode: rulesData.validationCode,
+        signature: btoa(`${numbers.join('')}:${stepCount}:${duration}`)
+      };
+      
+      setCoupon(couponData);
+    } catch (e) {
+      alert('Error generating coupon: ' + e.message);
+    }
+  };
+
+  const sendEmail = () => {
+    if (!coupon) return;
+    
+    const subject = encodeURIComponent('Step Challenge Coupon Submission');
+    const body = encodeURIComponent(`
+STEP CHALLENGE COUPON
+=====================
+
+Coupon Code: ${coupon.code}
+
+Numbers: ${coupon.numbers.join(', ')}
+Steps Completed: ${coupon.steps}
+Duration: ${coupon.duration} seconds
+Generated: ${coupon.timestamp}
+Validation Code: ${coupon.validationCode}
+Signature: ${coupon.signature}
+
+=====================
+This coupon was generated after completing ${coupon.steps} steps.
+Please verify the mathematical properties of each number.
+    `);
+    
+    window.location.href = `mailto:sohnenae@gmail.com?subject=${subject}&body=${body}`;
+  };
+
+  const verifyCoupon = () => {
+    try {
+      const lines = verifyInput.trim().split('\n');
+      const data = {};
+      
+      lines.forEach(line => {
+        if (line.includes(':')) {
+          const [key, value] = line.split(':').map(s => s.trim());
+          data[key] = value;
+        }
+      });
+      
+      const numbers = data['Numbers'].split(',').map(n => parseInt(n.trim()));
+      const rulesData = getRules();
+      
+      const results = numbers.map((num, idx) => {
+        const rule = rulesData.rules[idx];
+        
+        const divChecks = rule.div.map(d => ({
+          divisor: d,
+          valid: num % d === 0,
+          result: `${num} ÷ ${d} = ${Math.floor(num / d)} ${num % d === 0 ? '✓' : '✗'}`
+        }));
+        
+        const modChecks = rule.mod.map(m => ({
+          divisor: m.d,
+          expected: m.r,
+          actual: num % m.d,
+          valid: num % m.d === m.r,
+          result: `${num} mod ${m.d} = ${num % m.d} (expected ${m.r}) ${num % m.d === m.r ? '✓' : '✗'}`
+        }));
+        
+        const allValid = divChecks.every(c => c.valid) && modChecks.every(c => c.valid);
+        
+        return {
+          number: num,
+          valid: allValid,
+          divChecks,
+          modChecks
+        };
+      });
+      
+      const allValid = results.every(r => r.valid);
+      const validationMatch = data['Validation Code'] === rulesData.validationCode;
+      
+      setVerifyResult({
+        valid: allValid && validationMatch,
+        results,
+        validationMatch,
+        steps: data['Steps Completed'],
+        duration: data['Duration']
+      });
+    } catch (e) {
+      setVerifyResult({ valid: false, error: 'Invalid coupon format' });
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-indigo-50 to-purple-50 p-4">
+      <div className="max-w-2xl mx-auto">
+        
+        {/* Mode Toggle */}
+        <div className="bg-white rounded-2xl shadow-lg p-4 mb-6 flex gap-2">
+          <button
+            onClick={() => setMode('generate')}
+            className={`flex-1 py-3 rounded-lg font-semibold transition-colors ${
+              mode === 'generate' 
+                ? 'bg-indigo-600 text-white' 
+                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+            }`}
+          >
+            <Award className="inline mr-2" size={20} />
+            Generate Coupon
+          </button>
+          <button
+            onClick={() => setMode('verify')}
+            className={`flex-1 py-3 rounded-lg font-semibold transition-colors ${
+              mode === 'verify' 
+                ? 'bg-indigo-600 text-white' 
+                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+            }`}
+          >
+            <Shield className="inline mr-2" size={20} />
+            Verify (Owner)
+          </button>
+        </div>
+
+        {/* GENERATE MODE */}
+        {mode === 'generate' && (
+          <>
+            <div className="bg-white rounded-2xl shadow-lg p-8 mb-6">
+              <h1 className="text-3xl font-bold text-indigo-900 mb-6 flex items-center gap-3">
+                <Award className="text-yellow-500" size={40} />
+                Step Challenge
+              </h1>
+              
+              <div className="text-center mb-6">
+                <div className="text-6xl font-bold text-indigo-600 mb-2">{stepCount}</div>
+                <div className="text-gray-600">steps completed</div>
+                <div className="text-sm text-gray-500 mt-2">Duration: {Math.floor((Date.now() - startTime) / 1000)}s</div>
+                <div className="w-full bg-gray-200 rounded-full h-4 mt-4">
+                  <div 
+                    className="bg-indigo-600 h-4 rounded-full transition-all duration-300"
+                    style={{ width: `${Math.min((stepCount / 20) * 100, 100)}%` }}
+                  />
+                </div>
+              </div>
+
+              {!coupon && (
+                <>
+                  <div className="bg-gray-50 rounded-lg p-4 space-y-3 mb-4">
+                    <div>
+                      <label className="text-sm text-gray-600 block mb-1">
+                        Motion Sensitivity: {changeThreshold.toFixed(2)}
+                      </label>
+                      <input
+                        type="range"
+                        min="0.1"
+                        max="2"
+                        step="0.1"
+                        value={changeThreshold}
+                        onChange={(e) => setChangeThreshold(parseFloat(e.target.value))}
+                        className="w-full"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-sm text-gray-600 block mb-1">
+                        Time Between Steps: {timeThreshold}ms
+                      </label>
+                      <input
+                        type="range"
+                        min="100"
+                        max="1000"
+                        step="50"
+                        value={timeThreshold}
+                        onChange={(e) => setTimeThreshold(parseInt(e.target.value))}
+                        className="w-full"
+                      />
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={generateCoupon}
+                    disabled={stepCount < 20}
+                    className="w-full bg-indigo-600 text-white py-3 rounded-lg font-semibold hover:bg-indigo-700 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
+                  >
+                    {stepCount >= 20 ? 'Generate Coupon' : `Walk ${20 - stepCount} more steps`}
+                  </button>
+                </>
+              )}
+            </div>
+
+            {coupon && (
+              <div className="bg-gradient-to-br from-yellow-400 to-orange-500 rounded-2xl shadow-2xl p-8 text-white mb-6">
+                <div className="flex items-center justify-between mb-6">
+                  <h2 className="text-2xl font-bold">Your Crypto Coupon</h2>
+                  <Award size={40} />
+                </div>
+                
+                <div className="bg-white/20 backdrop-blur-sm rounded-xl p-6 mb-4">
+                  <div className="text-sm opacity-90 mb-2">Coupon Code</div>
+                  <div className="text-xl font-mono font-bold break-all">
+                    {coupon.code}
+                  </div>
+                </div>
+                
+                <div className="grid grid-cols-3 gap-3 text-sm mb-4">
+                  <div className="bg-white/20 backdrop-blur-sm rounded-lg p-3">
+                    <div className="opacity-90">Steps</div>
+                    <div className="text-lg font-bold">{coupon.steps}</div>
+                  </div>
+                  <div className="bg-white/20 backdrop-blur-sm rounded-lg p-3">
+                    <div className="opacity-90">Duration</div>
+                    <div className="text-lg font-bold">{coupon.duration}s</div>
+                  </div>
+                  <div className="bg-white/20 backdrop-blur-sm rounded-lg p-3">
+                    <div className="opacity-90">Numbers</div>
+                    <div className="text-lg font-bold">{coupon.numbers.length}</div>
+                  </div>
+                </div>
+
+                <div className="bg-white/20 backdrop-blur-sm rounded-lg p-3 text-xs mb-4">
+                  <div className="opacity-90 mb-1">Numbers</div>
+                  <div className="font-mono">{coupon.numbers.join(', ')}</div>
+                </div>
+
+                <div className="bg-white/20 backdrop-blur-sm rounded-lg p-3 text-xs mb-4">
+                  <div className="opacity-90 mb-1">Validation Code</div>
+                  <div className="font-mono font-bold">{coupon.validationCode}</div>
+                </div>
+                
+                <button
+                  onClick={sendEmail}
+                  className="w-full bg-white text-orange-600 py-3 rounded-lg font-semibold hover:bg-gray-100 transition-colors flex items-center justify-center gap-2"
+                >
+                  <Mail size={20} />
+                  Email to sohnenae@gmail.com
+                </button>
+
+                <div className="mt-4 text-xs opacity-90 text-center">
+                  <Lock size={14} className="inline mr-1" />
+                  Each number satisfies unique mathematical properties
+                </div>
+              </div>
+            )}
+          </>
+        )}
+
+        {/* VERIFY MODE */}
+        {mode === 'verify' && (
+          <div className="bg-white rounded-2xl shadow-lg p-8">
+            <h2 className="text-2xl font-bold text-indigo-900 mb-6 flex items-center gap-3">
+              <Shield className="text-indigo-600" size={32} />
+              Owner Verification
+            </h2>
+
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Paste Coupon Email Content
+              </label>
+              <textarea
+                value={verifyInput}
+                onChange={(e) => setVerifyInput(e.target.value)}
+                placeholder="Paste the entire coupon email here..."
+                className="w-full h-64 px-4 py-3 border border-gray-300 rounded-lg font-mono text-sm resize-none"
+              />
+            </div>
+
+            <button
+              onClick={verifyCoupon}
+              className="w-full bg-indigo-600 text-white py-3 rounded-lg font-semibold hover:bg-indigo-700 transition-colors mb-6"
+            >
+              Verify Coupon
+            </button>
+
+            {verifyResult && (
+              <div className={`rounded-xl p-6 ${verifyResult.valid ? 'bg-green-50 border-2 border-green-500' : 'bg-red-50 border-2 border-red-500'}`}>
+                <div className="flex items-center gap-3 mb-4">
+                  {verifyResult.valid ? (
+                    <CheckCircle className="text-green-600" size={32} />
+                  ) : (
+                    <XCircle className="text-red-600" size={32} />
+                  )}
+                  <h3 className="text-xl font-bold">
+                    {verifyResult.valid ? 'VALID COUPON ✓' : 'INVALID COUPON ✗'}
+                  </h3>
+                </div>
+
+                {verifyResult.error ? (
+                  <p className="text-red-600">{verifyResult.error}</p>
+                ) : (
+                  <>
+                    <div className="mb-4 text-sm">
+                      <div className="font-semibold mb-2">Coupon Details:</div>
+                      <div>Steps: {verifyResult.steps}</div>
+                      <div>Duration: {verifyResult.duration}</div>
+                      <div>Validation Code: {verifyResult.validationMatch ? '✓ Match' : '✗ Mismatch'}</div>
+                    </div>
+
+                    <div className="space-y-4">
+                      {verifyResult.results.map((result, idx) => (
+                        <div key={idx} className={`p-4 rounded-lg ${result.valid ? 'bg-white' : 'bg-red-100'}`}>
+                          <div className="font-bold mb-2 flex items-center gap-2">
+                            Number {idx + 1}: {result.number}
+                            {result.valid ? (
+                              <CheckCircle className="text-green-600" size={16} />
+                            ) : (
+                              <XCircle className="text-red-600" size={16} />
+                            )}
+                          </div>
+                          <div className="text-xs space-y-1 font-mono">
+                            <div className="font-semibold">Divisibility:</div>
+                            {result.divChecks.map((check, i) => (
+                              <div key={i} className={check.valid ? 'text-green-700' : 'text-red-700'}>
+                                {check.result}
+                              </div>
+                            ))}
+                            <div className="font-semibold mt-2">Modulo:</div>
+                            {result.modChecks.map((check, i) => (
+                              <div key={i} className={check.valid ? 'text-green-700' : 'text-red-700'}>
+                                {check.result}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Info */}
+        <div className="bg-white/60 backdrop-blur-sm rounded-xl p-6 text-sm text-gray-600">
+          <p className="mb-2">
+            <strong>How it works:</strong> Walk to generate steps. Each coupon contains 5 numbers with specific mathematical properties (divisibility and modulo constraints). The verification checks if all numbers satisfy the secret rules.
+          </p>
+          <p className="text-xs opacity-75">
+            Step count, duration, and timestamp make each coupon unique and harder to forge.
+          </p>
+        </div>
+      </div>
+    </div>
+  );
 };
 
-btnInc.onclick = ()=>{ steps++; if (steps<REVEAL_STEPS) couponObj=null; refresh(); };
-btnReset.onclick = ()=>{ steps=0; tokenMsg=''; couponObj=null; refresh(); };
-
-// ---------- Init ----------
-(function init(){
-  updateKeyBits();
-  refresh();
-})();
-</script>
-</body>
-</html>
+export default CryptoStepCoupon;
