@@ -1,463 +1,734 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Award, Mail, Shield, CheckCircle, XCircle, Lock } from 'lucide-react';
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Crypto Step Coupon Generator</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+      background: linear-gradient(135deg, #e0e7ff 0%, #ede9fe 100%);
+      min-height: 100vh;
+      padding: 20px;
+    }
+    .container { max-width: 800px; margin: 0 auto; }
+    .card {
+      background: white;
+      border-radius: 16px;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+      padding: 32px;
+      margin-bottom: 24px;
+    }
+    .mode-toggle {
+      display: flex;
+      gap: 8px;
+      padding: 16px;
+      margin-bottom: 24px;
+    }
+    .mode-btn {
+      flex: 1;
+      padding: 12px;
+      border: none;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 16px;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+    .mode-btn.active {
+      background: #4f46e5;
+      color: white;
+    }
+    .mode-btn:not(.active) {
+      background: #f3f4f6;
+      color: #6b7280;
+    }
+    .mode-btn:not(.active):hover { background: #e5e7eb; }
+    .header {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+    .header h1 { font-size: 28px; color: #312e81; }
+    .icon { width: 32px; height: 32px; }
+    .icon-lg { width: 48px; height: 48px; }
+    .step-display {
+      text-align: center;
+      margin-bottom: 24px;
+    }
+    .step-count {
+      font-size: 64px;
+      font-weight: bold;
+      color: #4f46e5;
+      line-height: 1;
+      margin-bottom: 8px;
+    }
+    .step-label { color: #6b7280; font-size: 14px; }
+    .progress-bar {
+      width: 100%;
+      height: 16px;
+      background: #e5e7eb;
+      border-radius: 8px;
+      overflow: hidden;
+      margin-top: 16px;
+    }
+    .progress-fill {
+      height: 100%;
+      background: #4f46e5;
+      transition: width 0.3s;
+    }
+    .controls {
+      background: #f9fafb;
+      border-radius: 8px;
+      padding: 16px;
+      margin-bottom: 16px;
+    }
+    .control-group {
+      margin-bottom: 12px;
+    }
+    .control-group:last-child { margin-bottom: 0; }
+    .control-label {
+      display: block;
+      font-size: 14px;
+      color: #6b7280;
+      margin-bottom: 4px;
+    }
+    .slider {
+      width: 100%;
+      height: 6px;
+      border-radius: 3px;
+      background: #e5e7eb;
+      outline: none;
+    }
+    .btn {
+      width: 100%;
+      padding: 12px;
+      border: none;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 16px;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+    .btn-primary {
+      background: #4f46e5;
+      color: white;
+    }
+    .btn-primary:hover { background: #4338ca; }
+    .btn-primary:disabled {
+      background: #d1d5db;
+      cursor: not-allowed;
+    }
+    .btn-secondary {
+      background: white;
+      color: #f59e0b;
+      border: 2px solid #f59e0b;
+    }
+    .btn-secondary:hover { background: #fef3c7; }
+    .coupon {
+      background: linear-gradient(135deg, #fbbf24 0%, #f97316 100%);
+      color: white;
+      border-radius: 16px;
+      padding: 32px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+    }
+    .coupon-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 24px;
+    }
+    .coupon-header h2 { font-size: 24px; }
+    .coupon-code {
+      background: rgba(255,255,255,0.2);
+      backdrop-filter: blur(10px);
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 16px;
+    }
+    .coupon-code-label {
+      font-size: 12px;
+      opacity: 0.9;
+      margin-bottom: 8px;
+    }
+    .coupon-code-value {
+      font-size: 20px;
+      font-family: 'Courier New', monospace;
+      font-weight: bold;
+      word-break: break-all;
+    }
+    .coupon-stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+    .stat-box {
+      background: rgba(255,255,255,0.2);
+      backdrop-filter: blur(10px);
+      border-radius: 8px;
+      padding: 12px;
+    }
+    .stat-label {
+      font-size: 12px;
+      opacity: 0.9;
+    }
+    .stat-value {
+      font-size: 20px;
+      font-weight: bold;
+    }
+    .coupon-detail {
+      background: rgba(255,255,255,0.2);
+      backdrop-filter: blur(10px);
+      border-radius: 8px;
+      padding: 12px;
+      margin-bottom: 12px;
+      font-size: 12px;
+    }
+    .coupon-detail-label {
+      opacity: 0.9;
+      margin-bottom: 4px;
+    }
+    .coupon-detail-value {
+      font-family: 'Courier New', monospace;
+    }
+    textarea {
+      width: 100%;
+      height: 200px;
+      padding: 12px;
+      border: 1px solid #d1d5db;
+      border-radius: 8px;
+      font-family: 'Courier New', monospace;
+      font-size: 12px;
+      resize: vertical;
+    }
+    .verify-result {
+      border-radius: 12px;
+      padding: 24px;
+      margin-top: 24px;
+    }
+    .verify-result.valid {
+      background: #d1fae5;
+      border: 2px solid #10b981;
+    }
+    .verify-result.invalid {
+      background: #fee2e2;
+      border: 2px solid #ef4444;
+    }
+    .verify-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+    .verify-header h3 {
+      font-size: 20px;
+    }
+    .number-check {
+      background: white;
+      border-radius: 8px;
+      padding: 16px;
+      margin-bottom: 12px;
+    }
+    .number-check.invalid {
+      background: #fecaca;
+    }
+    .number-header {
+      font-weight: bold;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .check-list {
+      font-family: 'Courier New', monospace;
+      font-size: 12px;
+    }
+    .check-item {
+      padding: 4px 0;
+    }
+    .check-item.valid { color: #059669; }
+    .check-item.invalid { color: #dc2626; }
+    .info-box {
+      background: rgba(255,255,255,0.6);
+      backdrop-filter: blur(10px);
+      border-radius: 12px;
+      padding: 20px;
+      font-size: 14px;
+      color: #4b5563;
+    }
+    .hidden { display: none; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Mode Toggle -->
+    <div class="card mode-toggle">
+      <button class="mode-btn active" id="btnGenerate">
+        <span>🏆</span> Generate Coupon
+      </button>
+      <button class="mode-btn" id="btnVerify">
+        <span>🛡️</span> Verify (Owner)
+      </button>
+    </div>
 
-const CryptoStepCoupon = () => {
-  const [stepCount, setStepCount] = useState(0);
-  const [coupon, setCoupon] = useState(null);
-  const [changeThreshold, setChangeThreshold] = useState(0.5);
-  const [timeThreshold, setTimeThreshold] = useState(300);
-  const [mode, setMode] = useState('generate'); // 'generate' or 'verify'
-  const [verifyInput, setVerifyInput] = useState('');
-  const [verifyResult, setVerifyResult] = useState(null);
-  const [startTime] = useState(Date.now());
-  
-  const lastAcceleration = useRef({ x: 0, y: 0, z: 0 });
-  const lastTime = useRef(Date.now());
+    <!-- GENERATE MODE -->
+    <div id="generateMode">
+      <div class="card">
+        <div class="header">
+          <h1>Step Challenge</h1>
+          <span style="font-size: 48px;">🏆</span>
+        </div>
 
-  // Obfuscated rules (base64 encoded JSON split across variables)
-  const p1 = 'eyJydWxlcyI6W3siZGl2IjpbN10sIm1vZCI6W3siZCI6MTMsInIiOjV9XSwicmFuZ2UiOls';
-  const p2 = 'xMDAwLDk5OTldfSx7ImRpdiI6WzExXSwibW9kIjpbeyJkIjoxNywiciI6OH1dLCJyYW5nZSI6';
-  const p3 = 'WzEwMDAsOTk5OV19LHsiZGl2IjpbMTNdLCJtb2QiOlt7ImQiOjE5LCJyIjozfV0sInJhbmdlIj';
-  const p4 = 'pbDEwMDAsOTk5OV19LHsiZGl2IjpbMTddLCJtb2QiOlt7ImQiOjIzLCJyIjoxNH1dLCJyYW5n';
-  const p5 = 'ZSI6WzEwMDAsOTk5OV19LHsiZGl2IjpbMTldLCJtb2QiOlt7ImQiOjI5LCJyIjo3fV0sInJhbm';
-  const p6 = 'dlIjpbMTAwMCw5OTk5XX1dLCJ2YWxpZGF0aW9uQ29kZSI6IkFMUEhBMjAyNSJ9';
+        <div class="step-display">
+          <div class="step-count" id="stepCount">0</div>
+          <div class="step-label">steps completed</div>
+          <div class="step-label" style="margin-top: 8px;">Duration: <span id="duration">0</span>s</div>
+          <div class="progress-bar">
+            <div class="progress-fill" id="progressFill"></div>
+          </div>
+        </div>
 
-  const getRules = () => {
-    const encoded = p1 + p2 + p3 + p4 + p5 + p6;
-    const decoded = atob(encoded);
-    return JSON.parse(decoded);
-  };
+        <div class="controls" id="controls">
+          <div class="control-group">
+            <label class="control-label">Motion Sensitivity: <span id="sensitivityValue">0.5</span></label>
+            <input type="range" class="slider" id="sensitivity" min="0.1" max="2" step="0.1" value="0.5">
+          </div>
+          <div class="control-group">
+            <label class="control-label">Time Between Steps: <span id="timeValue">300</span>ms</label>
+            <input type="range" class="slider" id="timeThreshold" min="100" max="1000" step="50" value="300">
+          </div>
+        </div>
 
-  useEffect(() => {
-    const handleMotion = (event) => {
-      if (coupon) return;
+        <button class="btn btn-primary" id="btnGenerateCoupon" disabled>
+          Walk <span id="stepsRemaining">20</span> more steps
+        </button>
+      </div>
+
+      <div id="couponDisplay" class="hidden">
+        <div class="coupon">
+          <div class="coupon-header">
+            <h2>Your Crypto Coupon</h2>
+            <span style="font-size: 40px;">🎫</span>
+          </div>
+
+          <div class="coupon-code">
+            <div class="coupon-code-label">Coupon Code</div>
+            <div class="coupon-code-value" id="couponCode"></div>
+          </div>
+
+          <div class="coupon-stats">
+            <div class="stat-box">
+              <div class="stat-label">Steps</div>
+              <div class="stat-value" id="couponSteps"></div>
+            </div>
+            <div class="stat-box">
+              <div class="stat-label">Duration</div>
+              <div class="stat-value" id="couponDuration"></div>
+            </div>
+            <div class="stat-box">
+              <div class="stat-label">Numbers</div>
+              <div class="stat-value" id="couponCount"></div>
+            </div>
+          </div>
+
+          <div class="coupon-detail">
+            <div class="coupon-detail-label">Numbers</div>
+            <div class="coupon-detail-value" id="couponNumbers"></div>
+          </div>
+
+          <div class="coupon-detail">
+            <div class="coupon-detail-label">Validation Code</div>
+            <div class="coupon-detail-value" id="couponValidation"></div>
+          </div>
+
+          <button class="btn btn-secondary" id="btnEmail">
+            📧 Email to sohnenae@gmail.com
+          </button>
+
+          <div style="margin-top: 16px; font-size: 12px; opacity: 0.9; text-align: center;">
+            🔒 Each number satisfies unique mathematical properties
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- VERIFY MODE -->
+    <div id="verifyMode" class="hidden">
+      <div class="card">
+        <div class="header">
+          <h1>Owner Verification</h1>
+          <span style="font-size: 40px;">🛡️</span>
+        </div>
+
+        <div style="margin-bottom: 16px;">
+          <label class="control-label" style="margin-bottom: 8px;">Paste Coupon Email Content</label>
+          <textarea id="verifyInput" placeholder="Paste the entire coupon email here..."></textarea>
+        </div>
+
+        <button class="btn btn-primary" id="btnVerifyCoupon">
+          Verify Coupon
+        </button>
+
+        <div id="verifyResult" class="hidden"></div>
+      </div>
+    </div>
+
+    <!-- Info -->
+    <div class="info-box">
+      <p style="margin-bottom: 8px;">
+        <strong>How it works:</strong> Walk to generate steps. Each coupon contains 5 numbers with specific mathematical properties (divisibility and modulo constraints). The verification checks if all numbers satisfy the secret rules.
+      </p>
+      <p style="font-size: 12px; opacity: 0.75;">
+        Step count, duration, and timestamp make each coupon unique and harder to forge.
+      </p>
+    </div>
+  </div>
+
+  <script>
+    // State
+    let stepCount = 0;
+    let startTime = Date.now();
+    let lastAcceleration = { x: 0, y: 0, z: 0 };
+    let lastTime = Date.now();
+    let couponData = null;
+    let changeThreshold = 0.5;
+    let timeThreshold = 300;
+
+    // DOM Elements
+    const stepCountEl = document.getElementById('stepCount');
+    const durationEl = document.getElementById('duration');
+    const progressFill = document.getElementById('progressFill');
+    const stepsRemainingEl = document.getElementById('stepsRemaining');
+    const btnGenerateCoupon = document.getElementById('btnGenerateCoupon');
+    const controls = document.getElementById('controls');
+    const couponDisplay = document.getElementById('couponDisplay');
+    const generateMode = document.getElementById('generateMode');
+    const verifyMode = document.getElementById('verifyMode');
+    const btnGenerate = document.getElementById('btnGenerate');
+    const btnVerify = document.getElementById('btnVerify');
+    const sensitivitySlider = document.getElementById('sensitivity');
+    const timeThresholdSlider = document.getElementById('timeThreshold');
+    const sensitivityValue = document.getElementById('sensitivityValue');
+    const timeValue = document.getElementById('timeValue');
+
+    // Obfuscated rules
+    const p1 = 'eyJydWxlcyI6W3siZGl2IjpbN10sIm1vZCI6W3siZCI6MTMsInIiOjV9XSwicmFuZ2UiOls';
+    const p2 = 'xMDAwLDk5OTldfSx7ImRpdiI6WzExXSwibW9kIjpbeyJkIjoxNywiciI6OH1dLCJyYW5nZSI6';
+    const p3 = 'WzEwMDAsOTk5OV19LHsiZGl2IjpbMTNdLCJtb2QiOlt7ImQiOjE5LCJyIjozfV0sInJhbmdlIj';
+    const p4 = 'pbDEwMDAsOTk5OV19LHsiZGl2IjpbMTddLCJtb2QiOlt7ImQiOjIzLCJyIjoxNH1dLCJyYW5n';
+    const p5 = 'ZSI6WzEwMDAsOTk5OV19LHsiZGl2IjpbMTldLCJtb2QiOlt7ImQiOjI5LCJyIjo3fV0sInJhbm';
+    const p6 = 'dlIjpbMTAwMCw5OTk5XX1dLCJ2YWxpZGF0aW9uQ29kZSI6IkFMUEhBMjAyNSJ9';
+
+    function getRules() {
+      const encoded = p1 + p2 + p3 + p4 + p5 + p6;
+      const decoded = atob(encoded);
+      return JSON.parse(decoded);
+    }
+
+    // Math helpers
+    function gcd(a, b) { return b === 0 ? a : gcd(b, a % b); }
+    function lcm(a, b) { return (a * b) / gcd(a, b); }
+
+    // Generate number matching rules
+    function generateNumberForRule(rule) {
+      const { div, mod, range } = rule;
+      const baseLCM = div.reduce((acc, val) => lcm(acc, val), 1);
+      const maxAttempts = 10000;
+      
+      for (let i = 0; i < maxAttempts; i++) {
+        const multiplier = Math.floor(Math.random() * (range[1] / baseLCM)) + 1;
+        let candidate = baseLCM * multiplier;
+        
+        let valid = true;
+        for (const modRule of mod) {
+          const currentRemainder = candidate % modRule.d;
+          if (currentRemainder !== modRule.r) {
+            const adjustment = (modRule.r - currentRemainder + modRule.d) % modRule.d;
+            candidate += adjustment;
+            
+            if (candidate < range[0] || candidate > range[1]) {
+              valid = false;
+              break;
+            }
+            
+            for (const d of div) {
+              if (candidate % d !== 0) {
+                valid = false;
+                break;
+              }
+            }
+          }
+        }
+        
+        if (valid && candidate >= range[0] && candidate <= range[1]) {
+          const allDivisible = div.every(d => candidate % d === 0);
+          const allModulo = mod.every(m => candidate % m.d === m.r);
+          
+          if (allDivisible && allModulo) {
+            return candidate;
+          }
+        }
+      }
+      
+      throw new Error('Could not generate valid number');
+    }
+
+    // Update UI
+    function updateStepDisplay() {
+      stepCountEl.textContent = stepCount;
+      const progress = Math.min((stepCount / 20) * 100, 100);
+      progressFill.style.width = progress + '%';
+      
+      if (stepCount >= 20) {
+        btnGenerateCoupon.disabled = false;
+        btnGenerateCoupon.textContent = 'Generate Coupon';
+        stepsRemainingEl.textContent = '0';
+      } else {
+        stepsRemainingEl.textContent = (20 - stepCount).toString();
+      }
+    }
+
+    function updateDuration() {
+      const seconds = Math.floor((Date.now() - startTime) / 1000);
+      durationEl.textContent = seconds;
+    }
+
+    // Motion detection
+    function handleMotion(event) {
+      if (couponData) return;
       
       const current = event.accelerationIncludingGravity;
       if (!current) return;
 
       const now = Date.now();
-      const timeElapsed = now - lastTime.current;
+      const timeElapsed = now - lastTime;
 
       const change = {
-        x: current.x - lastAcceleration.current.x,
-        y: current.y - lastAcceleration.current.y,
-        z: current.z - lastAcceleration.current.z
+        x: current.x - lastAcceleration.x,
+        y: current.y - lastAcceleration.y,
+        z: current.z - lastAcceleration.z
       };
       
       const magnitude = Math.sqrt(change.x**2 + change.y**2 + change.z**2);
 
       if (magnitude > changeThreshold && timeElapsed > timeThreshold) {
-        setStepCount(prev => prev + 1);
-        lastTime.current = now;
+        stepCount++;
+        updateStepDisplay();
+        lastTime = now;
       }
 
-      lastAcceleration.current = current;
-    };
-
-    window.addEventListener('devicemotion', handleMotion);
-    return () => window.removeEventListener('devicemotion', handleMotion);
-  }, [changeThreshold, timeThreshold, coupon]);
-
-  const gcd = (a, b) => b === 0 ? a : gcd(b, a % b);
-  const lcm = (a, b) => (a * b) / gcd(a, b);
-
-  const generateNumberForRule = (rule) => {
-    const { div, mod, range } = rule;
-    const baseLCM = div.reduce((acc, val) => lcm(acc, val), 1);
-    const maxAttempts = 10000;
-    
-    for (let i = 0; i < maxAttempts; i++) {
-      const multiplier = Math.floor(Math.random() * (range[1] / baseLCM)) + 1;
-      let candidate = baseLCM * multiplier;
-      
-      let valid = true;
-      for (const modRule of mod) {
-        const currentRemainder = candidate % modRule.d;
-        if (currentRemainder !== modRule.r) {
-          const adjustment = (modRule.r - currentRemainder + modRule.d) % modRule.d;
-          candidate += adjustment;
-          
-          if (candidate < range[0] || candidate > range[1]) {
-            valid = false;
-            break;
-          }
-          
-          for (const d of div) {
-            if (candidate % d !== 0) {
-              valid = false;
-              break;
-            }
-          }
-        }
-      }
-      
-      if (valid && candidate >= range[0] && candidate <= range[1]) {
-        const allDivisible = div.every(d => candidate % d === 0);
-        const allModulo = mod.every(m => candidate % m.d === m.r);
-        
-        if (allDivisible && allModulo) {
-          return candidate;
-        }
-      }
+      lastAcceleration = current;
     }
-    
-    throw new Error('Could not generate valid number');
-  };
 
-  const generateCoupon = () => {
-    try {
-      const rulesData = getRules();
-      const numbers = rulesData.rules.map(rule => generateNumberForRule(rule));
-      const endTime = Date.now();
-      const duration = Math.floor((endTime - startTime) / 1000);
-      
-      const couponData = {
-        numbers: numbers,
-        code: numbers.join('-'),
-        steps: stepCount,
-        timestamp: new Date().toISOString(),
-        duration: duration,
-        validationCode: rulesData.validationCode,
-        signature: btoa(`${numbers.join('')}:${stepCount}:${duration}`)
-      };
-      
-      setCoupon(couponData);
-    } catch (e) {
-      alert('Error generating coupon: ' + e.message);
-    }
-  };
-
-  const sendEmail = () => {
-    if (!coupon) return;
-    
-    const subject = encodeURIComponent('Step Challenge Coupon Submission');
-    const body = encodeURIComponent(`
-STEP CHALLENGE COUPON
-=====================
-
-Coupon Code: ${coupon.code}
-
-Numbers: ${coupon.numbers.join(', ')}
-Steps Completed: ${coupon.steps}
-Duration: ${coupon.duration} seconds
-Generated: ${coupon.timestamp}
-Validation Code: ${coupon.validationCode}
-Signature: ${coupon.signature}
-
-=====================
-This coupon was generated after completing ${coupon.steps} steps.
-Please verify the mathematical properties of each number.
-    `);
-    
-    window.location.href = `mailto:sohnenae@gmail.com?subject=${subject}&body=${body}`;
-  };
-
-  const verifyCoupon = () => {
-    try {
-      const lines = verifyInput.trim().split('\n');
-      const data = {};
-      
-      lines.forEach(line => {
-        if (line.includes(':')) {
-          const [key, value] = line.split(':').map(s => s.trim());
-          data[key] = value;
-        }
-      });
-      
-      const numbers = data['Numbers'].split(',').map(n => parseInt(n.trim()));
-      const rulesData = getRules();
-      
-      const results = numbers.map((num, idx) => {
-        const rule = rulesData.rules[idx];
+    // Generate coupon
+    function generateCoupon() {
+      try {
+        const rulesData = getRules();
+        const numbers = rulesData.rules.map(rule => generateNumberForRule(rule));
+        const endTime = Date.now();
+        const duration = Math.floor((endTime - startTime) / 1000);
         
-        const divChecks = rule.div.map(d => ({
-          divisor: d,
-          valid: num % d === 0,
-          result: `${num} ÷ ${d} = ${Math.floor(num / d)} ${num % d === 0 ? '✓' : '✗'}`
-        }));
-        
-        const modChecks = rule.mod.map(m => ({
-          divisor: m.d,
-          expected: m.r,
-          actual: num % m.d,
-          valid: num % m.d === m.r,
-          result: `${num} mod ${m.d} = ${num % m.d} (expected ${m.r}) ${num % m.d === m.r ? '✓' : '✗'}`
-        }));
-        
-        const allValid = divChecks.every(c => c.valid) && modChecks.every(c => c.valid);
-        
-        return {
-          number: num,
-          valid: allValid,
-          divChecks,
-          modChecks
+        couponData = {
+          numbers: numbers,
+          code: numbers.join('-'),
+          steps: stepCount,
+          timestamp: new Date().toISOString(),
+          duration: duration,
+          validationCode: rulesData.validationCode,
+          signature: btoa(`${numbers.join('')}:${stepCount}:${duration}`)
         };
-      });
-      
-      const allValid = results.every(r => r.valid);
-      const validationMatch = data['Validation Code'] === rulesData.validationCode;
-      
-      setVerifyResult({
-        valid: allValid && validationMatch,
-        results,
-        validationMatch,
-        steps: data['Steps Completed'],
-        duration: data['Duration']
-      });
-    } catch (e) {
-      setVerifyResult({ valid: false, error: 'Invalid coupon format' });
-    }
-  };
-
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-50 to-purple-50 p-4">
-      <div className="max-w-2xl mx-auto">
         
-        {/* Mode Toggle */}
-        <div className="bg-white rounded-2xl shadow-lg p-4 mb-6 flex gap-2">
-          <button
-            onClick={() => setMode('generate')}
-            className={`flex-1 py-3 rounded-lg font-semibold transition-colors ${
-              mode === 'generate' 
-                ? 'bg-indigo-600 text-white' 
-                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-            }`}
-          >
-            <Award className="inline mr-2" size={20} />
-            Generate Coupon
-          </button>
-          <button
-            onClick={() => setMode('verify')}
-            className={`flex-1 py-3 rounded-lg font-semibold transition-colors ${
-              mode === 'verify' 
-                ? 'bg-indigo-600 text-white' 
-                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-            }`}
-          >
-            <Shield className="inline mr-2" size={20} />
-            Verify (Owner)
-          </button>
-        </div>
+        // Display coupon
+        document.getElementById('couponCode').textContent = couponData.code;
+        document.getElementById('couponSteps').textContent = couponData.steps;
+        document.getElementById('couponDuration').textContent = couponData.duration + 's';
+        document.getElementById('couponCount').textContent = couponData.numbers.length;
+        document.getElementById('couponNumbers').textContent = couponData.numbers.join(', ');
+        document.getElementById('couponValidation').textContent = couponData.validationCode;
+        
+        controls.classList.add('hidden');
+        btnGenerateCoupon.classList.add('hidden');
+        couponDisplay.classList.remove('hidden');
+      } catch (e) {
+        alert('Error generating coupon: ' + e.message);
+      }
+    }
 
-        {/* GENERATE MODE */}
-        {mode === 'generate' && (
-          <>
-            <div className="bg-white rounded-2xl shadow-lg p-8 mb-6">
-              <h1 className="text-3xl font-bold text-indigo-900 mb-6 flex items-center gap-3">
-                <Award className="text-yellow-500" size={40} />
-                Step Challenge
-              </h1>
-              
-              <div className="text-center mb-6">
-                <div className="text-6xl font-bold text-indigo-600 mb-2">{stepCount}</div>
-                <div className="text-gray-600">steps completed</div>
-                <div className="text-sm text-gray-500 mt-2">Duration: {Math.floor((Date.now() - startTime) / 1000)}s</div>
-                <div className="w-full bg-gray-200 rounded-full h-4 mt-4">
-                  <div 
-                    className="bg-indigo-600 h-4 rounded-full transition-all duration-300"
-                    style={{ width: `${Math.min((stepCount / 20) * 100, 100)}%` }}
-                  />
-                </div>
-              </div>
+    // Email coupon
+    function emailCoupon() {
+      if (!couponData) return;
+      
+      const subject = encodeURIComponent('Step Challenge Coupon Submission');
+      const body = encodeURIComponent(`STEP CHALLENGE COUPON
+=====================
 
-              {!coupon && (
-                <>
-                  <div className="bg-gray-50 rounded-lg p-4 space-y-3 mb-4">
-                    <div>
-                      <label className="text-sm text-gray-600 block mb-1">
-                        Motion Sensitivity: {changeThreshold.toFixed(2)}
-                      </label>
-                      <input
-                        type="range"
-                        min="0.1"
-                        max="2"
-                        step="0.1"
-                        value={changeThreshold}
-                        onChange={(e) => setChangeThreshold(parseFloat(e.target.value))}
-                        className="w-full"
-                      />
-                    </div>
-                    <div>
-                      <label className="text-sm text-gray-600 block mb-1">
-                        Time Between Steps: {timeThreshold}ms
-                      </label>
-                      <input
-                        type="range"
-                        min="100"
-                        max="1000"
-                        step="50"
-                        value={timeThreshold}
-                        onChange={(e) => setTimeThreshold(parseInt(e.target.value))}
-                        className="w-full"
-                      />
-                    </div>
-                  </div>
+Coupon Code: ${couponData.code}
 
-                  <button
-                    onClick={generateCoupon}
-                    disabled={stepCount < 20}
-                    className="w-full bg-indigo-600 text-white py-3 rounded-lg font-semibold hover:bg-indigo-700 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
-                  >
-                    {stepCount >= 20 ? 'Generate Coupon' : `Walk ${20 - stepCount} more steps`}
-                  </button>
-                </>
-              )}
+Numbers: ${couponData.numbers.join(', ')}
+Steps Completed: ${couponData.steps}
+Duration: ${couponData.duration} seconds
+Generated: ${couponData.timestamp}
+Validation Code: ${couponData.validationCode}
+Signature: ${couponData.signature}
+
+=====================
+This coupon was generated after completing ${couponData.steps} steps.
+Please verify the mathematical properties of each number.
+      `);
+      
+      window.location.href = `mailto:sohnenae@gmail.com?subject=${subject}&body=${body}`;
+    }
+
+    // Verify coupon
+    function verifyCoupon() {
+      const input = document.getElementById('verifyInput').value.trim();
+      const resultEl = document.getElementById('verifyResult');
+      
+      try {
+        const lines = input.split('\n');
+        const data = {};
+        
+        lines.forEach(line => {
+          if (line.includes(':')) {
+            const [key, value] = line.split(':').map(s => s.trim());
+            data[key] = value;
+          }
+        });
+        
+        const numbers = data['Numbers'].split(',').map(n => parseInt(n.trim()));
+        const rulesData = getRules();
+        
+        let html = '';
+        let allValid = true;
+        
+        numbers.forEach((num, idx) => {
+          const rule = rulesData.rules[idx];
+          let numValid = true;
+          
+          html += `<div class="number-check${numValid ? '' : ' invalid'}">`;
+          html += `<div class="number-header">Number ${idx + 1}: ${num} `;
+          
+          // Check divisibility
+          const divChecks = rule.div.map(d => {
+            const valid = num % d === 0;
+            if (!valid) numValid = false;
+            return {
+              valid,
+              text: `${num} ÷ ${d} = ${Math.floor(num / d)} ${valid ? '✓' : '✗'}`
+            };
+          });
+          
+          // Check modulo
+          const modChecks = rule.mod.map(m => {
+            const valid = num % m.d === m.r;
+            if (!valid) numValid = false;
+            return {
+              valid,
+              text: `${num} mod ${m.d} = ${num % m.d} (expected ${m.r}) ${valid ? '✓' : '✗'}`
+            };
+          });
+          
+          html += numValid ? '✓' : '✗';
+          html += '</div><div class="check-list">';
+          html += '<div style="font-weight: bold; margin-top: 8px;">Divisibility:</div>';
+          divChecks.forEach(check => {
+            html += `<div class="check-item ${check.valid ? 'valid' : 'invalid'}">${check.text}</div>`;
+          });
+          html += '<div style="font-weight: bold; margin-top: 8px;">Modulo:</div>';
+          modChecks.forEach(check => {
+            html += `<div class="check-item ${check.valid ? 'valid' : 'invalid'}">${check.text}</div>`;
+          });
+          html += '</div></div>';
+          
+          if (!numValid) allValid = false;
+        });
+        
+        const validationMatch = data['Validation Code'] === rulesData.validationCode;
+        if (!validationMatch) allValid = false;
+        
+        const headerIcon = allValid ? '✅' : '❌';
+        const headerText = allValid ? 'VALID COUPON ✓' : 'INVALID COUPON ✗';
+        const resultClass = allValid ? 'valid' : 'invalid';
+        
+        resultEl.innerHTML = `
+          <div class="verify-result ${resultClass}">
+            <div class="verify-header">
+              <span style="font-size: 32px;">${headerIcon}</span>
+              <h3>${headerText}</h3>
             </div>
-
-            {coupon && (
-              <div className="bg-gradient-to-br from-yellow-400 to-orange-500 rounded-2xl shadow-2xl p-8 text-white mb-6">
-                <div className="flex items-center justify-between mb-6">
-                  <h2 className="text-2xl font-bold">Your Crypto Coupon</h2>
-                  <Award size={40} />
-                </div>
-                
-                <div className="bg-white/20 backdrop-blur-sm rounded-xl p-6 mb-4">
-                  <div className="text-sm opacity-90 mb-2">Coupon Code</div>
-                  <div className="text-xl font-mono font-bold break-all">
-                    {coupon.code}
-                  </div>
-                </div>
-                
-                <div className="grid grid-cols-3 gap-3 text-sm mb-4">
-                  <div className="bg-white/20 backdrop-blur-sm rounded-lg p-3">
-                    <div className="opacity-90">Steps</div>
-                    <div className="text-lg font-bold">{coupon.steps}</div>
-                  </div>
-                  <div className="bg-white/20 backdrop-blur-sm rounded-lg p-3">
-                    <div className="opacity-90">Duration</div>
-                    <div className="text-lg font-bold">{coupon.duration}s</div>
-                  </div>
-                  <div className="bg-white/20 backdrop-blur-sm rounded-lg p-3">
-                    <div className="opacity-90">Numbers</div>
-                    <div className="text-lg font-bold">{coupon.numbers.length}</div>
-                  </div>
-                </div>
-
-                <div className="bg-white/20 backdrop-blur-sm rounded-lg p-3 text-xs mb-4">
-                  <div className="opacity-90 mb-1">Numbers</div>
-                  <div className="font-mono">{coupon.numbers.join(', ')}</div>
-                </div>
-
-                <div className="bg-white/20 backdrop-blur-sm rounded-lg p-3 text-xs mb-4">
-                  <div className="opacity-90 mb-1">Validation Code</div>
-                  <div className="font-mono font-bold">{coupon.validationCode}</div>
-                </div>
-                
-                <button
-                  onClick={sendEmail}
-                  className="w-full bg-white text-orange-600 py-3 rounded-lg font-semibold hover:bg-gray-100 transition-colors flex items-center justify-center gap-2"
-                >
-                  <Mail size={20} />
-                  Email to sohnenae@gmail.com
-                </button>
-
-                <div className="mt-4 text-xs opacity-90 text-center">
-                  <Lock size={14} className="inline mr-1" />
-                  Each number satisfies unique mathematical properties
-                </div>
-              </div>
-            )}
-          </>
-        )}
-
-        {/* VERIFY MODE */}
-        {mode === 'verify' && (
-          <div className="bg-white rounded-2xl shadow-lg p-8">
-            <h2 className="text-2xl font-bold text-indigo-900 mb-6 flex items-center gap-3">
-              <Shield className="text-indigo-600" size={32} />
-              Owner Verification
-            </h2>
-
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Paste Coupon Email Content
-              </label>
-              <textarea
-                value={verifyInput}
-                onChange={(e) => setVerifyInput(e.target.value)}
-                placeholder="Paste the entire coupon email here..."
-                className="w-full h-64 px-4 py-3 border border-gray-300 rounded-lg font-mono text-sm resize-none"
-              />
+            <div style="margin-bottom: 16px; font-size: 14px;">
+              <div style="font-weight: bold; margin-bottom: 8px;">Coupon Details:</div>
+              <div>Steps: ${data['Steps Completed']}</div>
+              <div>Duration: ${data['Duration']}</div>
+              <div>Validation Code: ${validationMatch ? '✓ Match' : '✗ Mismatch'}</div>
             </div>
-
-            <button
-              onClick={verifyCoupon}
-              className="w-full bg-indigo-600 text-white py-3 rounded-lg font-semibold hover:bg-indigo-700 transition-colors mb-6"
-            >
-              Verify Coupon
-            </button>
-
-            {verifyResult && (
-              <div className={`rounded-xl p-6 ${verifyResult.valid ? 'bg-green-50 border-2 border-green-500' : 'bg-red-50 border-2 border-red-500'}`}>
-                <div className="flex items-center gap-3 mb-4">
-                  {verifyResult.valid ? (
-                    <CheckCircle className="text-green-600" size={32} />
-                  ) : (
-                    <XCircle className="text-red-600" size={32} />
-                  )}
-                  <h3 className="text-xl font-bold">
-                    {verifyResult.valid ? 'VALID COUPON ✓' : 'INVALID COUPON ✗'}
-                  </h3>
-                </div>
-
-                {verifyResult.error ? (
-                  <p className="text-red-600">{verifyResult.error}</p>
-                ) : (
-                  <>
-                    <div className="mb-4 text-sm">
-                      <div className="font-semibold mb-2">Coupon Details:</div>
-                      <div>Steps: {verifyResult.steps}</div>
-                      <div>Duration: {verifyResult.duration}</div>
-                      <div>Validation Code: {verifyResult.validationMatch ? '✓ Match' : '✗ Mismatch'}</div>
-                    </div>
-
-                    <div className="space-y-4">
-                      {verifyResult.results.map((result, idx) => (
-                        <div key={idx} className={`p-4 rounded-lg ${result.valid ? 'bg-white' : 'bg-red-100'}`}>
-                          <div className="font-bold mb-2 flex items-center gap-2">
-                            Number {idx + 1}: {result.number}
-                            {result.valid ? (
-                              <CheckCircle className="text-green-600" size={16} />
-                            ) : (
-                              <XCircle className="text-red-600" size={16} />
-                            )}
-                          </div>
-                          <div className="text-xs space-y-1 font-mono">
-                            <div className="font-semibold">Divisibility:</div>
-                            {result.divChecks.map((check, i) => (
-                              <div key={i} className={check.valid ? 'text-green-700' : 'text-red-700'}>
-                                {check.result}
-                              </div>
-                            ))}
-                            <div className="font-semibold mt-2">Modulo:</div>
-                            {result.modChecks.map((check, i) => (
-                              <div key={i} className={check.valid ? 'text-green-700' : 'text-red-700'}>
-                                {check.result}
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </>
-                )}
-              </div>
-            )}
+            ${html}
           </div>
-        )}
+        `;
+        resultEl.classList.remove('hidden');
+      } catch (e) {
+        resultEl.innerHTML = `
+          <div class="verify-result invalid">
+            <div class="verify-header">
+              <span style="font-size: 32px;">❌</span>
+              <h3>ERROR</h3>
+            </div>
+            <p>Invalid coupon format or parsing error.</p>
+          </div>
+        `;
+        resultEl.classList.remove('hidden');
+      }
+    }
 
-        {/* Info */}
-        <div className="bg-white/60 backdrop-blur-sm rounded-xl p-6 text-sm text-gray-600">
-          <p className="mb-2">
-            <strong>How it works:</strong> Walk to generate steps. Each coupon contains 5 numbers with specific mathematical properties (divisibility and modulo constraints). The verification checks if all numbers satisfy the secret rules.
-          </p>
-          <p className="text-xs opacity-75">
-            Step count, duration, and timestamp make each coupon unique and harder to forge.
-          </p>
-        </div>
-      </div>
-    </div>
-  );
-};
+    // Mode switching
+    function switchMode(mode) {
+      if (mode === 'generate') {
+        generateMode.classList.remove('hidden');
+        verifyMode.classList.add('hidden');
+        btnGenerate.classList.add('active');
+        btnVerify.classList.remove('active');
+      } else {
+        generateMode.classList.add('hidden');
+        verifyMode.classList.remove('hidden');
+        btnGenerate.classList.remove('active');
+        btnVerify.classList.add('active');
+      }
+    }
 
-export default CryptoStepCoupon;
+    // Event listeners
+    window.addEventListener('devicemotion', handleMotion);
+    btnGenerateCoupon.addEventListener('click', generateCoupon);
+    document.getElementById('btnEmail').addEventListener('click', emailCoupon);
+    document.getElementById('btnVerifyCoupon').addEventListener('click', verifyCoupon);
+    btnGenerate.addEventListener('click', () => switchMode('generate'));
+    btnVerify.addEventListener('click', () => switchMode('verify'));
+
+    sensitivitySlider.addEventListener('input', (e) => {
+      changeThreshold = parseFloat(e.target.value);
+      sensitivityValue.textContent = changeThreshold.toFixed(2);
+    });
+
+    timeThresholdSlider.addEventListener('input', (e) => {
+      timeThreshold = parseInt(e.target.value);
+      timeValue.textContent = timeThreshold;
+    });
+
+    // Update duration every second
+    setInterval(updateDuration, 1000);
+
+    // Initialize
+    updateStepDisplay();
+  </script>
+</body>
+</html>
