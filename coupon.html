@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Step → Coupon (Encrypted Pools)</title>
+<style>
+  :root{--bg:#0b0d10;--card:#12161b;--mut:#9aa4ae;--fg:#e8ecf1;--acc:#4caf50;--warn:#ff6b6b;}
+  *{box-sizing:border-box} body{margin:0;background:var(--bg);color:var(--fg);font-family:Inter,system-ui,Segoe UI,Roboto,Arial,sans-serif}
+  .wrap{max-width:980px;margin:24px auto;padding:16px}
+  .card{background:var(--card);border:1px solid #1f2a33;border-radius:14px;padding:16px}
+  h1{margin:0 0 8px;font-size:1.35rem} .mut{color:var(--mut);font-size:.92rem}
+  input,textarea,button{font:inherit}
+  input,textarea{width:100%;background:#0d1116;border:1px solid #1f2a33;color:var(--fg);border-radius:10px;padding:10px 12px}
+  textarea{min-height:120px;resize:vertical;font-family:ui-monospace,Menlo,Consolas,monospace}
+  .row{display:grid;gap:12px} @media(min-width:860px){.row.two{grid-template-columns:1fr 1fr}}
+  .btn{border:0;border-radius:10px;padding:10px 12px;font-weight:700;cursor:pointer;background:#2d3742;color:#fff}
+  .btn.acc{background:var(--acc)} .btn.warn{background:#b23b3b}
+  .meter{height:10px;background:#1b232b;border-radius:999px;overflow:hidden;margin-top:6px}
+  .meter>span{display:block;height:100%;background:var(--acc);width:0%}
+  .ok{color:var(--acc)} .bad{color:var(--warn)}
+</style>
+<!-- CryptoJS (AES-ECB / PKCS7) -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+</head>
+<body>
+<div class="wrap">
+  <div class="card">
+    <h1>Step → Coupon</h1>
+    <div class="mut">Enter key → Decrypt pools → Walk (or click) to 10 steps → Reveal coupon. Numbers come from encrypted arrays; UI doesn’t expose why they were chosen.</div>
+  </div>
+
+  <div class="card">
+    <h3 style="margin:0 0 8px;">Owner Key & Pool Loader</h3>
+    <div class="row two">
+      <div>
+        <label>Key</label>
+        <input id="key" value="COUPONMAGIC2025!COUPONMAGIC2025!"/>
+        <div class="mut" id="keyBits"></div>
+      </div>
+      <div>
+        <div class="mut">Click to decrypt four embedded arrays.</div>
+        <button class="btn acc" id="load">Load / Decrypt Pools</button>
+        <div id="loadStatus" class="mut" style="margin-top:8px"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="row two">
+      <div>
+        <div><b>Today:</b> <span id="today"></span></div>
+        <div style="margin-top:6px"><b>Steps:</b> <span id="steps">0</span></div>
+        <div class="meter" title="progress to reveal"><span id="progress"></span></div>
+        <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
+          <button class="btn" id="inc">+1 Step</button>
+          <button class="btn warn" id="reset">Reset</button>
+        </div>
+        <div id="status" class="mut" style="margin-top:8px">Load pools to begin.</div>
+      </div>
+      <div>
+        <label>Token (≥5 steps)</label>
+        <textarea id="token" readonly></textarea>
+        <div style="margin-top:12px">
+          <label>Coupon (≥10 steps)</label>
+          <textarea id="coupon" readonly></textarea>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ---------- Guard ----------
+if (typeof CryptoJS === 'undefined') {
+  alert('CryptoJS failed to load. If offline, save the library locally or serve this over a local server.');
+}
+
+// ---------- Embedded encrypted arrays (base64, AES-ECB-PKCS7 of JSON array text) ----------
+const ARR1_CIPH = "dVxzwWtJKPiTMXNV8WDi99GDwT4R4FAcZ0ottVvO84I=";
+const ARR2_CIPH = "4kL68Svx3UuYYOO7C1JpzG3q4wnS76upgogR0LpI0fA=";
+const ARR3_CIPH = "E3xqk81R3p6N0SZlIzhomzH4XN1J195QCA7JgWsIKYQ=";
+const ARR4_CIPH = "Q9gKq41AngnCfRIRqpROimlUIxpJdulssVeur6mcC1s=";
+
+// ---------- DOM ----------
+const elKey = document.getElementById('key');
+const elKeyBits = document.getElementById('keyBits');
+const elLoad = document.getElementById('load');
+const elLoadStatus = document.getElementById('loadStatus');
+
+const elToday = document.getElementById('today');
+const elSteps = document.getElementById('steps');
+const elProgress = document.getElementById('progress');
+const elStatus = document.getElementById('status');
+const elToken = document.getElementById('token');
+const elCoupon = document.getElementById('coupon');
+
+const btnInc = document.getElementById('inc');
+const btnReset = document.getElementById('reset');
+
+// ---------- Key meter ----------
+function updateKeyBits(){
+  const bytes = new TextEncoder().encode(elKey.value).length;
+  const bits = bytes * 8;
+  const valid = (bytes===16||bytes===24||bytes===32);
+  elKeyBits.innerHTML = `Key length: <b>${bytes} bytes</b> (${bits} bits) — ` + (valid?'<span class="ok">valid</span>':'<span class="bad">need 16/24/32</span>');
+}
+elKey.addEventListener('input', updateKeyBits);
+
+// ---------- Decrypt helpers ----------
+function keyWA(k){ return CryptoJS.enc.Utf8.parse(k); }
+function decryptJSONArr(b64, key){
+  const dec = CryptoJS.AES.decrypt(b64, key, {mode: CryptoJS.mode.ECB, padding: CryptoJS.pad.Pkcs7});
+  const txt = dec.toString(CryptoJS.enc.Utf8);
+  if (!txt) throw new Error('Bad key or blob');
+  const obj = JSON.parse(txt);
+  if (!Array.isArray(obj)) throw new Error('Decrypted content is not an array');
+  // normalize to integers
+  return obj.map(x => parseInt(x,10)).filter(Number.isFinite);
+}
+function encNumberToB64(n, key){
+  const ct = CryptoJS.AES.encrypt(CryptoJS.enc.Utf8.parse(String(n)), key, {mode: CryptoJS.mode.ECB, padding: CryptoJS.pad.Pkcs7});
+  return ct.toString();
+}
+
+// ---------- State ----------
+const UNLOCK_STEPS = 5, REVEAL_STEPS = 10;
+let loaded = false;
+let pools = [[],[],[],[]];
+let steps = 0;
+let tokenMsg = '';
+let couponObj = null;
+
+// ---------- UI helpers ----------
+const todayISO = () => new Date().toISOString().slice(0,10);
+function setStatus(msg, ok=false){ elStatus.innerHTML = ok?`<span class="ok">✔ ${msg}</span>`:msg; }
+function pct(){ return Math.min(100, Math.floor(steps/REVEAL_STEPS*100)); }
+function rand(arr){ return arr[Math.floor(Math.random()*arr.length)]; }
+function shuffle(a){ const x=[...a]; for(let i=x.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [x[i],x[j]]=[x[j],x[i]]; } return x; }
+
+function refresh(){
+  elToday.textContent = todayISO();
+  elSteps.textContent = steps;
+  elProgress.style.width = pct() + '%';
+
+  if (!loaded){
+    setStatus('Load pools with the key first.');
+    elToken.value=''; elCoupon.value=''; return;
+  }
+  if (steps < UNLOCK_STEPS){
+    setStatus(`Need ${UNLOCK_STEPS-steps} more step(s) to unlock…`);
+    elToken.value=''; elCoupon.value=''; return;
+  }
+  tokenMsg = tokenMsg || 'TOKEN READY — keep stepping…';
+  elToken.value = tokenMsg;
+  if (steps < REVEAL_STEPS){
+    setStatus('Token unlocked. Reach 10 to reveal.', true);
+    elCoupon.value=''; return;
+  }
+  if (!couponObj) couponObj = buildCoupon();
+  setStatus('Coupon revealed.', true);
+  elCoupon.value = JSON.stringify(couponObj, null, 2);
+}
+
+// Hidden-ish trigger effects (subtle; not advertised)
+function runHiddenEffects(picks){
+  // Example: if any value ends with 123 → tag 'star', if digit sum % 9 == 0 → tag 'bonus'
+  const tags = [];
+  for (const p of picks){
+    const v = p.value;
+    if (String(v).endsWith('123')) tags.push({code:p.code, tag:'star'});
+    const sum = String(v).split('').reduce((a,b)=>a+(+b||0),0);
+    if (sum % 9 === 0) tags.push({code:p.code, tag:'bonus'});
+  }
+  return tags;
+}
+
+function buildCoupon(){
+  const key = keyWA(elKey.value);
+  const used = new Set();
+  function pickFrom(bucket){
+    const choices = bucket.filter(n=>!used.has(n));
+    if (!choices.length) throw new Error('Bucket exhausted; not enough unique values.');
+    const v = rand(choices); used.add(v); return v;
+  }
+  const pA = pickFrom(pools[0]);
+  const pB = pickFrom(pools[1]);
+  const pC = pickFrom(pools[2]);
+  const pD = pickFrom(pools[3]);
+
+  const labels = shuffle(['R7','X9','Q2','L1']);
+  const picks = [
+    { code: labels[0], value: pA, enc: encNumberToB64(pA, key) },
+    { code: labels[1], value: pB, enc: encNumberToB64(pB, key) },
+    { code: labels[2], value: pC, enc: encNumberToB64(pC, key) },
+    { code: labels[3], value: pD, enc: encNumberToB64(pD, key) },
+  ];
+  const effects = runHiddenEffects(picks);
+
+  return {
+    version: 1,
+    date: todayISO(),
+    steps,
+    picks,               // each: {code, value, enc}
+    effects              // hidden tags (owner can use or ignore)
+  };
+}
+
+// ---------- Events ----------
+elLoad.onclick = ()=>{
+  elLoadStatus.textContent = 'Decrypting…';
+  try{
+    const key = keyWA(elKey.value);
+    const a1 = decryptJSONArr(ARR1_CIPH, key);
+    const a2 = decryptJSONArr(ARR2_CIPH, key);
+    const a3 = decryptJSONArr(ARR3_CIPH, key);
+    const a4 = decryptJSONArr(ARR4_CIPH, key);
+    pools = [a1,a2,a3,a4];
+    const total = a1.length + a2.length + a3.length + a4.length;
+    loaded = true; steps = 0; tokenMsg=''; couponObj=null;
+    elLoadStatus.innerHTML = `<span class="ok">Loaded ${total} numbers across 4 pools.</span>`;
+    refresh();
+  }catch(e){
+    console.error(e);
+    loaded = false;
+    elLoadStatus.innerHTML = `<span class="bad">Failed to decrypt pools. Check key.</span>`;
+    elToken.value=''; elCoupon.value='';
+  }
+};
+
+btnInc.onclick = ()=>{ steps++; if (steps<REVEAL_STEPS) couponObj=null; refresh(); };
+btnReset.onclick = ()=>{ steps=0; tokenMsg=''; couponObj=null; refresh(); };
+
+// ---------- Init ----------
+(function init(){
+  updateKeyBits();
+  refresh();
+})();
+</script>
+</body>
+</html>
