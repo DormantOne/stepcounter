@@ -35,10 +35,6 @@
       font-size: 16px;
       cursor: pointer;
       transition: all 0.2s;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
     }
     .mode-btn.active {
       background: #4f46e5;
@@ -48,7 +44,6 @@
       background: #f3f4f6;
       color: #6b7280;
     }
-    .mode-btn:not(.active):hover { background: #e5e7eb; }
     .header {
       display: flex;
       align-items: center;
@@ -56,8 +51,6 @@
       margin-bottom: 24px;
     }
     .header h1 { font-size: 28px; color: #312e81; }
-    .icon { width: 32px; height: 32px; }
-    .icon-lg { width: 48px; height: 48px; }
     .step-display {
       text-align: center;
       margin-bottom: 24px;
@@ -101,10 +94,6 @@
     }
     .slider {
       width: 100%;
-      height: 6px;
-      border-radius: 3px;
-      background: #e5e7eb;
-      outline: none;
     }
     .btn {
       width: 100%;
@@ -115,16 +104,11 @@
       font-size: 16px;
       cursor: pointer;
       transition: all 0.2s;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
     }
     .btn-primary {
       background: #4f46e5;
       color: white;
     }
-    .btn-primary:hover { background: #4338ca; }
     .btn-primary:disabled {
       background: #d1d5db;
       cursor: not-allowed;
@@ -134,7 +118,6 @@
       color: #f59e0b;
       border: 2px solid #f59e0b;
     }
-    .btn-secondary:hover { background: #fef3c7; }
     .coupon {
       background: linear-gradient(135deg, #fbbf24 0%, #f97316 100%);
       color: white;
@@ -148,7 +131,6 @@
       align-items: center;
       margin-bottom: 24px;
     }
-    .coupon-header h2 { font-size: 24px; }
     .coupon-code {
       background: rgba(255,255,255,0.2);
       backdrop-filter: blur(10px);
@@ -156,14 +138,9 @@
       padding: 20px;
       margin-bottom: 16px;
     }
-    .coupon-code-label {
-      font-size: 12px;
-      opacity: 0.9;
-      margin-bottom: 8px;
-    }
     .coupon-code-value {
-      font-size: 20px;
-      font-family: 'Courier New', monospace;
+      font-size: 18px;
+      font-family: monospace;
       font-weight: bold;
       word-break: break-all;
     }
@@ -179,10 +156,6 @@
       border-radius: 8px;
       padding: 12px;
     }
-    .stat-label {
-      font-size: 12px;
-      opacity: 0.9;
-    }
     .stat-value {
       font-size: 20px;
       font-weight: bold;
@@ -195,20 +168,13 @@
       margin-bottom: 12px;
       font-size: 12px;
     }
-    .coupon-detail-label {
-      opacity: 0.9;
-      margin-bottom: 4px;
-    }
-    .coupon-detail-value {
-      font-family: 'Courier New', monospace;
-    }
     textarea {
       width: 100%;
       height: 200px;
       padding: 12px;
       border: 1px solid #d1d5db;
       border-radius: 8px;
-      font-family: 'Courier New', monospace;
+      font-family: monospace;
       font-size: 12px;
       resize: vertical;
     }
@@ -225,15 +191,6 @@
       background: #fee2e2;
       border: 2px solid #ef4444;
     }
-    .verify-header {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      margin-bottom: 16px;
-    }
-    .verify-header h3 {
-      font-size: 20px;
-    }
     .number-check {
       background: white;
       border-radius: 8px;
@@ -243,15 +200,8 @@
     .number-check.invalid {
       background: #fecaca;
     }
-    .number-header {
-      font-weight: bold;
-      margin-bottom: 8px;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
     .check-list {
-      font-family: 'Courier New', monospace;
+      font-family: monospace;
       font-size: 12px;
     }
     .check-item {
@@ -272,17 +222,15 @@
 </head>
 <body>
   <div class="container">
-    <!-- Mode Toggle -->
     <div class="card mode-toggle">
       <button class="mode-btn active" id="btnGenerate">
-        <span>🏆</span> Generate Coupon
+        🏆 Generate Coupon
       </button>
       <button class="mode-btn" id="btnVerify">
-        <span>🛡️</span> Verify (Owner)
+        🛡️ Verify (Owner)
       </button>
     </div>
 
-    <!-- GENERATE MODE -->
     <div id="generateMode">
       <div class="card">
         <div class="header">
@@ -323,33 +271,33 @@
           </div>
 
           <div class="coupon-code">
-            <div class="coupon-code-label">Coupon Code</div>
+            <div style="font-size: 12px; opacity: 0.9; margin-bottom: 8px;">Coupon Code</div>
             <div class="coupon-code-value" id="couponCode"></div>
           </div>
 
           <div class="coupon-stats">
             <div class="stat-box">
-              <div class="stat-label">Steps</div>
+              <div style="font-size: 12px; opacity: 0.9;">Steps</div>
               <div class="stat-value" id="couponSteps"></div>
             </div>
             <div class="stat-box">
-              <div class="stat-label">Duration</div>
+              <div style="font-size: 12px; opacity: 0.9;">Duration</div>
               <div class="stat-value" id="couponDuration"></div>
             </div>
             <div class="stat-box">
-              <div class="stat-label">Numbers</div>
+              <div style="font-size: 12px; opacity: 0.9;">Numbers</div>
               <div class="stat-value" id="couponCount"></div>
             </div>
           </div>
 
           <div class="coupon-detail">
-            <div class="coupon-detail-label">Numbers</div>
-            <div class="coupon-detail-value" id="couponNumbers"></div>
+            <div style="opacity: 0.9; margin-bottom: 4px;">Numbers</div>
+            <div style="font-family: monospace;" id="couponNumbers"></div>
           </div>
 
           <div class="coupon-detail">
-            <div class="coupon-detail-label">Validation Code</div>
-            <div class="coupon-detail-value" id="couponValidation"></div>
+            <div style="opacity: 0.9; margin-bottom: 4px;">Validation Code</div>
+            <div style="font-family: monospace; font-weight: bold;" id="couponValidation"></div>
           </div>
 
           <button class="btn btn-secondary" id="btnEmail">
@@ -363,7 +311,6 @@
       </div>
     </div>
 
-    <!-- VERIFY MODE -->
     <div id="verifyMode" class="hidden">
       <div class="card">
         <div class="header">
@@ -384,7 +331,6 @@
       </div>
     </div>
 
-    <!-- Info -->
     <div class="info-box">
       <p style="margin-bottom: 8px;">
         <strong>How it works:</strong> Walk to generate steps. Each coupon contains 5 numbers with specific mathematical properties (divisibility and modulo constraints). The verification checks if all numbers satisfy the secret rules.
@@ -396,74 +342,57 @@
   </div>
 
   <script>
-    // State
-    let stepCount = 0;
-    let startTime = Date.now();
-    let lastAcceleration = { x: 0, y: 0, z: 0 };
-    let lastTime = Date.now();
-    let couponData = null;
-    let changeThreshold = 0.5;
-    let timeThreshold = 300;
-
-    // DOM Elements
-    const stepCountEl = document.getElementById('stepCount');
-    const durationEl = document.getElementById('duration');
-    const progressFill = document.getElementById('progressFill');
-    const stepsRemainingEl = document.getElementById('stepsRemaining');
-    const btnGenerateCoupon = document.getElementById('btnGenerateCoupon');
-    const controls = document.getElementById('controls');
-    const couponDisplay = document.getElementById('couponDisplay');
-    const generateMode = document.getElementById('generateMode');
-    const verifyMode = document.getElementById('verifyMode');
-    const btnGenerate = document.getElementById('btnGenerate');
-    const btnVerify = document.getElementById('btnVerify');
-    const sensitivitySlider = document.getElementById('sensitivity');
-    const timeThresholdSlider = document.getElementById('timeThreshold');
-    const sensitivityValue = document.getElementById('sensitivityValue');
-    const timeValue = document.getElementById('timeValue');
-
-    // Obfuscated rules
-    const p1 = 'eyJydWxlcyI6W3siZGl2IjpbN10sIm1vZCI6W3siZCI6MTMsInIiOjV9XSwicmFuZ2UiOls';
-    const p2 = 'xMDAwLDk5OTldfSx7ImRpdiI6WzExXSwibW9kIjpbeyJkIjoxNywiciI6OH1dLCJyYW5nZSI6';
-    const p3 = 'WzEwMDAsOTk5OV19LHsiZGl2IjpbMTNdLCJtb2QiOlt7ImQiOjE5LCJyIjozfV0sInJhbmdlIj';
-    const p4 = 'pbDEwMDAsOTk5OV19LHsiZGl2IjpbMTddLCJtb2QiOlt7ImQiOjIzLCJyIjoxNH1dLCJyYW5n';
-    const p5 = 'ZSI6WzEwMDAsOTk5OV19LHsiZGl2IjpbMTldLCJtb2QiOlt7ImQiOjI5LCJyIjo3fV0sInJhbm';
-    const p6 = 'dlIjpbMTAwMCw5OTk5XX1dLCJ2YWxpZGF0aW9uQ29kZSI6IkFMUEhBMjAyNSJ9';
+    var stepCount = 0;
+    var startTime = Date.now();
+    var lastAcceleration = { x: 0, y: 0, z: 0 };
+    var lastTime = Date.now();
+    var couponData = null;
+    var changeThreshold = 0.5;
+    var timeThreshold = 300;
 
     function getRules() {
-      const encoded = p1 + p2 + p3 + p4 + p5 + p6;
-      const decoded = atob(encoded);
-      return JSON.parse(decoded);
+      var r1 = { div: [7], mod: [{ d: 13, r: 5 }], range: [1000, 9999] };
+      var r2 = { div: [11], mod: [{ d: 17, r: 8 }], range: [1000, 9999] };
+      var r3 = { div: [13], mod: [{ d: 19, r: 3 }], range: [1000, 9999] };
+      var r4 = { div: [17], mod: [{ d: 23, r: 14 }], range: [1000, 9999] };
+      var r5 = { div: [19], mod: [{ d: 29, r: 7 }], range: [1000, 9999] };
+      return {
+        rules: [r1, r2, r3, r4, r5],
+        validationCode: 'ALPHA2025'
+      };
     }
 
-    // Math helpers
-    function gcd(a, b) { return b === 0 ? a : gcd(b, a % b); }
-    function lcm(a, b) { return (a * b) / gcd(a, b); }
+    function gcd(a, b) {
+      return b === 0 ? a : gcd(b, a % b);
+    }
 
-    // Generate number matching rules
+    function lcm(a, b) {
+      return (a * b) / gcd(a, b);
+    }
+
     function generateNumberForRule(rule) {
-      const { div, mod, range } = rule;
-      const baseLCM = div.reduce((acc, val) => lcm(acc, val), 1);
-      const maxAttempts = 10000;
+      var baseLCM = rule.div.reduce(function(acc, val) { return lcm(acc, val); }, 1);
+      var maxAttempts = 10000;
       
-      for (let i = 0; i < maxAttempts; i++) {
-        const multiplier = Math.floor(Math.random() * (range[1] / baseLCM)) + 1;
-        let candidate = baseLCM * multiplier;
+      for (var i = 0; i < maxAttempts; i++) {
+        var multiplier = Math.floor(Math.random() * (rule.range[1] / baseLCM)) + 1;
+        var candidate = baseLCM * multiplier;
+        var valid = true;
         
-        let valid = true;
-        for (const modRule of mod) {
-          const currentRemainder = candidate % modRule.d;
+        for (var j = 0; j < rule.mod.length; j++) {
+          var modRule = rule.mod[j];
+          var currentRemainder = candidate % modRule.d;
           if (currentRemainder !== modRule.r) {
-            const adjustment = (modRule.r - currentRemainder + modRule.d) % modRule.d;
+            var adjustment = (modRule.r - currentRemainder + modRule.d) % modRule.d;
             candidate += adjustment;
             
-            if (candidate < range[0] || candidate > range[1]) {
+            if (candidate < rule.range[0] || candidate > rule.range[1]) {
               valid = false;
               break;
             }
             
-            for (const d of div) {
-              if (candidate % d !== 0) {
+            for (var k = 0; k < rule.div.length; k++) {
+              if (candidate % rule.div[k] !== 0) {
                 valid = false;
                 break;
               }
@@ -471,9 +400,22 @@
           }
         }
         
-        if (valid && candidate >= range[0] && candidate <= range[1]) {
-          const allDivisible = div.every(d => candidate % d === 0);
-          const allModulo = mod.every(m => candidate % m.d === m.r);
+        if (valid && candidate >= rule.range[0] && candidate <= rule.range[1]) {
+          var allDivisible = true;
+          for (var m = 0; m < rule.div.length; m++) {
+            if (candidate % rule.div[m] !== 0) {
+              allDivisible = false;
+              break;
+            }
+          }
+          
+          var allModulo = true;
+          for (var n = 0; n < rule.mod.length; n++) {
+            if (candidate % rule.mod[n].d !== rule.mod[n].r) {
+              allModulo = false;
+              break;
+            }
+          }
           
           if (allDivisible && allModulo) {
             return candidate;
@@ -484,43 +426,41 @@
       throw new Error('Could not generate valid number');
     }
 
-    // Update UI
     function updateStepDisplay() {
-      stepCountEl.textContent = stepCount;
-      const progress = Math.min((stepCount / 20) * 100, 100);
-      progressFill.style.width = progress + '%';
+      document.getElementById('stepCount').textContent = stepCount;
+      var progress = Math.min((stepCount / 20) * 100, 100);
+      document.getElementById('progressFill').style.width = progress + '%';
       
+      var btn = document.getElementById('btnGenerateCoupon');
       if (stepCount >= 20) {
-        btnGenerateCoupon.disabled = false;
-        btnGenerateCoupon.textContent = 'Generate Coupon';
-        stepsRemainingEl.textContent = '0';
+        btn.disabled = false;
+        btn.textContent = 'Generate Coupon';
       } else {
-        stepsRemainingEl.textContent = (20 - stepCount).toString();
+        document.getElementById('stepsRemaining').textContent = String(20 - stepCount);
       }
     }
 
     function updateDuration() {
-      const seconds = Math.floor((Date.now() - startTime) / 1000);
-      durationEl.textContent = seconds;
+      var seconds = Math.floor((Date.now() - startTime) / 1000);
+      document.getElementById('duration').textContent = String(seconds);
     }
 
-    // Motion detection
     function handleMotion(event) {
       if (couponData) return;
       
-      const current = event.accelerationIncludingGravity;
+      var current = event.accelerationIncludingGravity;
       if (!current) return;
 
-      const now = Date.now();
-      const timeElapsed = now - lastTime;
+      var now = Date.now();
+      var timeElapsed = now - lastTime;
 
-      const change = {
+      var change = {
         x: current.x - lastAcceleration.x,
         y: current.y - lastAcceleration.y,
         z: current.z - lastAcceleration.z
       };
       
-      const magnitude = Math.sqrt(change.x**2 + change.y**2 + change.z**2);
+      var magnitude = Math.sqrt(change.x * change.x + change.y * change.y + change.z * change.z);
 
       if (magnitude > changeThreshold && timeElapsed > timeThreshold) {
         stepCount++;
@@ -531,13 +471,15 @@
       lastAcceleration = current;
     }
 
-    // Generate coupon
     function generateCoupon() {
       try {
-        const rulesData = getRules();
-        const numbers = rulesData.rules.map(rule => generateNumberForRule(rule));
-        const endTime = Date.now();
-        const duration = Math.floor((endTime - startTime) / 1000);
+        var rulesData = getRules();
+        var numbers = [];
+        for (var i = 0; i < rulesData.rules.length; i++) {
+          numbers.push(generateNumberForRule(rulesData.rules[i]));
+        }
+        var endTime = Date.now();
+        var duration = Math.floor((endTime - startTime) / 1000);
         
         couponData = {
           numbers: numbers,
@@ -546,188 +488,182 @@
           timestamp: new Date().toISOString(),
           duration: duration,
           validationCode: rulesData.validationCode,
-          signature: btoa(`${numbers.join('')}:${stepCount}:${duration}`)
+          signature: btoa(numbers.join('') + ':' + stepCount + ':' + duration)
         };
         
-        // Display coupon
         document.getElementById('couponCode').textContent = couponData.code;
-        document.getElementById('couponSteps').textContent = couponData.steps;
-        document.getElementById('couponDuration').textContent = couponData.duration + 's';
-        document.getElementById('couponCount').textContent = couponData.numbers.length;
+        document.getElementById('couponSteps').textContent = String(couponData.steps);
+        document.getElementById('couponDuration').textContent = String(couponData.duration) + 's';
+        document.getElementById('couponCount').textContent = String(couponData.numbers.length);
         document.getElementById('couponNumbers').textContent = couponData.numbers.join(', ');
         document.getElementById('couponValidation').textContent = couponData.validationCode;
         
-        controls.classList.add('hidden');
-        btnGenerateCoupon.classList.add('hidden');
-        couponDisplay.classList.remove('hidden');
+        document.getElementById('controls').classList.add('hidden');
+        document.getElementById('btnGenerateCoupon').classList.add('hidden');
+        document.getElementById('couponDisplay').classList.remove('hidden');
       } catch (e) {
         alert('Error generating coupon: ' + e.message);
       }
     }
 
-    // Email coupon
     function emailCoupon() {
       if (!couponData) return;
       
-      const subject = encodeURIComponent('Step Challenge Coupon Submission');
-      const body = encodeURIComponent(`STEP CHALLENGE COUPON
-=====================
-
-Coupon Code: ${couponData.code}
-
-Numbers: ${couponData.numbers.join(', ')}
-Steps Completed: ${couponData.steps}
-Duration: ${couponData.duration} seconds
-Generated: ${couponData.timestamp}
-Validation Code: ${couponData.validationCode}
-Signature: ${couponData.signature}
-
-=====================
-This coupon was generated after completing ${couponData.steps} steps.
-Please verify the mathematical properties of each number.
-      `);
+      var subject = encodeURIComponent('Step Challenge Coupon Submission');
+      var bodyText = 'STEP CHALLENGE COUPON\n';
+      bodyText += '=====================\n\n';
+      bodyText += 'Coupon Code: ' + couponData.code + '\n\n';
+      bodyText += 'Numbers: ' + couponData.numbers.join(', ') + '\n';
+      bodyText += 'Steps Completed: ' + String(couponData.steps) + '\n';
+      bodyText += 'Duration: ' + String(couponData.duration) + ' seconds\n';
+      bodyText += 'Generated: ' + couponData.timestamp + '\n';
+      bodyText += 'Validation Code: ' + couponData.validationCode + '\n';
+      bodyText += 'Signature: ' + couponData.signature + '\n\n';
+      bodyText += '=====================\n';
+      bodyText += 'This coupon was generated after completing ' + String(couponData.steps) + ' steps.\n';
+      bodyText += 'Please verify the mathematical properties of each number.';
       
-      window.location.href = `mailto:sohnenae@gmail.com?subject=${subject}&body=${body}`;
+      var body = encodeURIComponent(bodyText);
+      window.location.href = 'mailto:sohnenae@gmail.com?subject=' + subject + '&body=' + body;
     }
 
-    // Verify coupon
     function verifyCoupon() {
-      const input = document.getElementById('verifyInput').value.trim();
-      const resultEl = document.getElementById('verifyResult');
+      var input = document.getElementById('verifyInput').value.trim();
+      var resultEl = document.getElementById('verifyResult');
       
       try {
-        const lines = input.split('\n');
-        const data = {};
+        var lines = input.split('\n');
+        var data = {};
         
-        lines.forEach(line => {
-          if (line.includes(':')) {
-            const [key, value] = line.split(':').map(s => s.trim());
+        for (var i = 0; i < lines.length; i++) {
+          var line = lines[i];
+          if (line.indexOf(':') !== -1) {
+            var colonIndex = line.indexOf(':');
+            var key = line.substring(0, colonIndex).trim();
+            var value = line.substring(colonIndex + 1).trim();
             data[key] = value;
           }
-        });
+        }
         
-        const numbers = data['Numbers'].split(',').map(n => parseInt(n.trim()));
-        const rulesData = getRules();
+        var numberStrings = data['Numbers'].split(',');
+        var numbers = [];
+        for (var i = 0; i < numberStrings.length; i++) {
+          numbers.push(parseInt(numberStrings[i].trim()));
+        }
+        var rulesData = getRules();
         
-        let html = '';
-        let allValid = true;
+        var html = '';
+        var allValid = true;
         
-        numbers.forEach((num, idx) => {
-          const rule = rulesData.rules[idx];
-          let numValid = true;
+        for (var idx = 0; idx < numbers.length; idx++) {
+          var num = numbers[idx];
+          var rule = rulesData.rules[idx];
+          var numValid = true;
           
-          html += `<div class="number-check${numValid ? '' : ' invalid'}">`;
-          html += `<div class="number-header">Number ${idx + 1}: ${num} `;
+          html += '<div class="number-check';
           
-          // Check divisibility
-          const divChecks = rule.div.map(d => {
-            const valid = num % d === 0;
+          var divChecks = [];
+          for (var d = 0; d < rule.div.length; d++) {
+            var divisor = rule.div[d];
+            var valid = num % divisor === 0;
             if (!valid) numValid = false;
-            return {
-              valid,
-              text: `${num} ÷ ${d} = ${Math.floor(num / d)} ${valid ? '✓' : '✗'}`
-            };
-          });
+            divChecks.push({
+              valid: valid,
+              text: String(num) + ' / ' + String(divisor) + ' = ' + String(Math.floor(num / divisor)) + ' ' + (valid ? 'OK' : 'FAIL')
+            });
+          }
           
-          // Check modulo
-          const modChecks = rule.mod.map(m => {
-            const valid = num % m.d === m.r;
+          var modChecks = [];
+          for (var m = 0; m < rule.mod.length; m++) {
+            var modRule = rule.mod[m];
+            var valid = num % modRule.d === modRule.r;
             if (!valid) numValid = false;
-            return {
-              valid,
-              text: `${num} mod ${m.d} = ${num % m.d} (expected ${m.r}) ${valid ? '✓' : '✗'}`
-            };
-          });
+            modChecks.push({
+              valid: valid,
+              text: String(num) + ' mod ' + String(modRule.d) + ' = ' + String(num % modRule.d) + ' expected ' + String(modRule.r) + ' ' + (valid ? 'OK' : 'FAIL')
+            });
+          }
           
-          html += numValid ? '✓' : '✗';
+          if (!numValid) {
+            html += ' invalid';
+            allValid = false;
+          }
+          html += '">';
+          html += '<div style="font-weight: bold; margin-bottom: 8px;">Number ' + String(idx + 1) + ': ' + String(num) + ' ';
+          html += numValid ? 'VALID' : 'INVALID';
           html += '</div><div class="check-list">';
           html += '<div style="font-weight: bold; margin-top: 8px;">Divisibility:</div>';
-          divChecks.forEach(check => {
-            html += `<div class="check-item ${check.valid ? 'valid' : 'invalid'}">${check.text}</div>`;
-          });
+          for (var c = 0; c < divChecks.length; c++) {
+            html += '<div class="check-item ' + (divChecks[c].valid ? 'valid' : 'invalid') + '">' + divChecks[c].text + '</div>';
+          }
           html += '<div style="font-weight: bold; margin-top: 8px;">Modulo:</div>';
-          modChecks.forEach(check => {
-            html += `<div class="check-item ${check.valid ? 'valid' : 'invalid'}">${check.text}</div>`;
-          });
+          for (var c = 0; c < modChecks.length; c++) {
+            html += '<div class="check-item ' + (modChecks[c].valid ? 'valid' : 'invalid') + '">' + modChecks[c].text + '</div>';
+          }
           html += '</div></div>';
-          
-          if (!numValid) allValid = false;
-        });
+        }
         
-        const validationMatch = data['Validation Code'] === rulesData.validationCode;
+        var validationMatch = data['Validation Code'] === rulesData.validationCode;
         if (!validationMatch) allValid = false;
         
-        const headerIcon = allValid ? '✅' : '❌';
-        const headerText = allValid ? 'VALID COUPON ✓' : 'INVALID COUPON ✗';
-        const resultClass = allValid ? 'valid' : 'invalid';
+        var headerIcon = allValid ? 'PASS' : 'FAIL';
+        var headerText = allValid ? 'VALID COUPON' : 'INVALID COUPON';
+        var resultClass = allValid ? 'valid' : 'invalid';
         
-        resultEl.innerHTML = `
-          <div class="verify-result ${resultClass}">
-            <div class="verify-header">
-              <span style="font-size: 32px;">${headerIcon}</span>
-              <h3>${headerText}</h3>
-            </div>
-            <div style="margin-bottom: 16px; font-size: 14px;">
-              <div style="font-weight: bold; margin-bottom: 8px;">Coupon Details:</div>
-              <div>Steps: ${data['Steps Completed']}</div>
-              <div>Duration: ${data['Duration']}</div>
-              <div>Validation Code: ${validationMatch ? '✓ Match' : '✗ Mismatch'}</div>
-            </div>
-            ${html}
-          </div>
-        `;
+        var resultHTML = '<div class="verify-result ' + resultClass + '">';
+        resultHTML += '<div style="display: flex; align-items: center; gap: 12px; margin-bottom: 16px;">';
+        resultHTML += '<span style="font-size: 32px;">' + headerIcon + '</span>';
+        resultHTML += '<h3>' + headerText + '</h3>';
+        resultHTML += '</div>';
+        resultHTML += '<div style="margin-bottom: 16px; font-size: 14px;">';
+        resultHTML += '<div style="font-weight: bold; margin-bottom: 8px;">Coupon Details:</div>';
+        resultHTML += '<div>Steps: ' + data['Steps Completed'] + '</div>';
+        resultHTML += '<div>Duration: ' + data['Duration'] + '</div>';
+        resultHTML += '<div>Validation Code: ' + (validationMatch ? 'Match' : 'Mismatch') + '</div>';
+        resultHTML += '</div>';
+        resultHTML += html;
+        resultHTML += '</div>';
+        
+        resultEl.innerHTML = resultHTML;
         resultEl.classList.remove('hidden');
       } catch (e) {
-        resultEl.innerHTML = `
-          <div class="verify-result invalid">
-            <div class="verify-header">
-              <span style="font-size: 32px;">❌</span>
-              <h3>ERROR</h3>
-            </div>
-            <p>Invalid coupon format or parsing error.</p>
-          </div>
-        `;
+        resultEl.innerHTML = '<div class="verify-result invalid"><div style="display: flex; align-items: center; gap: 12px; margin-bottom: 16px;"><span style="font-size: 32px;">ERROR</span><h3>ERROR</h3></div><p>Invalid coupon format or parsing error.</p></div>';
         resultEl.classList.remove('hidden');
       }
     }
 
-    // Mode switching
     function switchMode(mode) {
       if (mode === 'generate') {
-        generateMode.classList.remove('hidden');
-        verifyMode.classList.add('hidden');
-        btnGenerate.classList.add('active');
-        btnVerify.classList.remove('active');
+        document.getElementById('generateMode').classList.remove('hidden');
+        document.getElementById('verifyMode').classList.add('hidden');
+        document.getElementById('btnGenerate').classList.add('active');
+        document.getElementById('btnVerify').classList.remove('active');
       } else {
-        generateMode.classList.add('hidden');
-        verifyMode.classList.remove('hidden');
-        btnGenerate.classList.remove('active');
-        btnVerify.classList.add('active');
+        document.getElementById('generateMode').classList.add('hidden');
+        document.getElementById('verifyMode').classList.remove('hidden');
+        document.getElementById('btnGenerate').classList.remove('active');
+        document.getElementById('btnVerify').classList.add('active');
       }
     }
 
-    // Event listeners
     window.addEventListener('devicemotion', handleMotion);
-    btnGenerateCoupon.addEventListener('click', generateCoupon);
+    document.getElementById('btnGenerateCoupon').addEventListener('click', generateCoupon);
     document.getElementById('btnEmail').addEventListener('click', emailCoupon);
     document.getElementById('btnVerifyCoupon').addEventListener('click', verifyCoupon);
-    btnGenerate.addEventListener('click', () => switchMode('generate'));
-    btnVerify.addEventListener('click', () => switchMode('verify'));
+    document.getElementById('btnGenerate').addEventListener('click', function() { switchMode('generate'); });
+    document.getElementById('btnVerify').addEventListener('click', function() { switchMode('verify'); });
 
-    sensitivitySlider.addEventListener('input', (e) => {
+    document.getElementById('sensitivity').addEventListener('input', function(e) {
       changeThreshold = parseFloat(e.target.value);
-      sensitivityValue.textContent = changeThreshold.toFixed(2);
+      document.getElementById('sensitivityValue').textContent = changeThreshold.toFixed(2);
     });
 
-    timeThresholdSlider.addEventListener('input', (e) => {
+    document.getElementById('timeThreshold').addEventListener('input', function(e) {
       timeThreshold = parseInt(e.target.value);
-      timeValue.textContent = timeThreshold;
+      document.getElementById('timeValue').textContent = String(timeThreshold);
     });
 
-    // Update duration every second
     setInterval(updateDuration, 1000);
-
-    // Initialize
     updateStepDisplay();
   </script>
 </body>
